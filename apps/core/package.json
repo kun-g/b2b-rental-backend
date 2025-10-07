@@ -13,7 +13,8 @@
     "prisma:generate": "prisma generate",
     "seed": "prisma db seed",
     "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
     "@b2b-rental/shared": "workspace:*",

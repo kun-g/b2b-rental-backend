@@ -6,11 +6,15 @@
   "packageManager": "pnpm@8.15.4",
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "format": "turbo run format",
-    "migrate": "turbo run migrate --filter=@b2b-rental/core",
-    "seed": "turbo run seed --filter=@b2b-rental/core"
+    "build": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run build",
+    "lint": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run lint",
+    "format": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run format",
+    "format:check": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run format:check",
+    "test": "pnpm test:ci",
+    "test:ci": "node scripts/run-tests-ci.mjs",
+    "quality:verify": "pnpm lint && pnpm format:check && pnpm build && pnpm test:ci",
+    "migrate": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run migrate --filter=@b2b-rental/core",
+    "seed": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run seed --filter=@b2b-rental/core"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

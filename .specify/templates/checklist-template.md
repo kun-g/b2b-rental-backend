@@ -32,6 +32,13 @@
 - [ ] CHK005 Item with specific criteria
 - [ ] CHK006 Final item in this category
 
+## 质量校验（通用）
+
+- [ ] 已附上最近一次 `pnpm lint` 的执行记录或 CI 链接。
+- [ ] 已附上最近一次 `pnpm format:check` 的执行记录或 CI 链接。
+- [ ] 已附上最近一次 `pnpm build`（即 `turbo run build`）的执行记录或 CI 链接。
+- [ ] `reports/tests/latest.log` 中包含最近一次 `pnpm test:ci` 生成的测试日志；若暂无测试，日志需说明原因与整改计划。
+
 ## Notes
 
 - Check items off as completed: `[x]`

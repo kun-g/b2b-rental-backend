@@ -53,6 +53,9 @@ cp .env.sample .env
 | `pnpm build` | 构建所有 packages 与 apps。 |
 | `pnpm lint` | 运行 ESLint 检查整个工作区。 |
 | `pnpm format` | 使用 Prettier 格式化整个工作区。 |
+| `pnpm format:check` | 以只读模式执行 Prettier 校验，CI/PR 必须通过。 |
+| `pnpm test:ci` | 运行 `turbo run test` 并将日志输出至 `reports/tests/latest.log`；若暂无测试会记录说明。 |
+| `pnpm quality:verify` | 顺序执行 `lint`、`format:check`、`build`、`test:ci`，用于本地或 CI 质量门禁。 |
 | `pnpm migrate` | 触发 Turbo 在 Core 应用中运行 Prisma 迁移（读取 `apps/core/prisma/migrations`，默认等待锁 60 秒）。 |
 | `pnpm seed` | 在迁移完成后执行 Prisma 数据种子，写入演示租户/商户/SKU 等数据。 |
 

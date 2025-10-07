@@ -15,12 +15,19 @@
     "format": {
       "outputs": []
     },
+    "format:check": {
+      "outputs": []
+    },
     "migrate": {
       "cache": false
     },
     "seed": {
       "dependsOn": ["migrate"],
       "cache": false
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": ["coverage/**", "reports/tests/**"]
     }
   }
 }
