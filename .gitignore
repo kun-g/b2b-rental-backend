@@ -1,0 +1,12 @@
+node_modules
+.pnpm-store
+*.log
+dist
+.next
+.turbo
+build
+.tmp
+.env
+.DS_Store
+coverage
+postgres-data

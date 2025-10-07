@@ -1,0 +1,9 @@
+node_modules
+.pnpm-store
+.git
+.gitignore
+dist
+.next
+build
+postgres-data
+.env
