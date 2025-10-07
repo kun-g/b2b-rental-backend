@@ -53,6 +53,20 @@ cp .env.sample .env
 | `pnpm build` | 构建所有 packages 与 apps。 |
 | `pnpm lint` | 运行 ESLint 检查整个工作区。 |
 | `pnpm format` | 使用 Prettier 格式化整个工作区。 |
+| `pnpm migrate` | 触发 Turbo 在 Core 应用中运行 Prisma 迁移（读取 `apps/core/prisma/migrations`，默认等待锁 60 秒）。 |
+| `pnpm seed` | 在迁移完成后执行 Prisma 数据种子，写入演示租户/商户/SKU 等数据。 |
+
+> 提示：迁移脚本已默认设置 `PRISMA_MIGRATION_ENGINE_ADVISORY_LOCK_TIMEOUT=60000`，如需更长等待时长，可在执行前自行覆盖该环境变量。
+
+### CMS 多租户与草稿
+
+- Payload 与 Core 共用同一 Postgres，新增 `tenants` 集合用于维护租户元数据，`tenant-pages` 集合支持草稿版本与租户隔离。
+- 用户集合新增三种角色：
+  - `superAdmin`：拥有全局权限，可维护所有租户与用户；
+  - `tenantAdmin`：管理本租户成员与内容；
+  - `tenantEditor`：仅能在本租户范围内协作内容。
+- 非超级管理员创建/编辑内容时会自动关联其所属租户，草稿在 `tenant-pages` 中以 Payload 原生版本功能保存，可在发布前多次迭代。
+- 如需访问 Payload Admin，请使用 `pnpm --filter @b2b-rental/cms dev` 启动 CMS，然后访问 [http://localhost:4002/admin](http://localhost:4002/admin) 登录相应角色账号。
 
 ## 常见问题排查
 

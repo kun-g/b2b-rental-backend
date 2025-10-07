@@ -8,19 +8,22 @@
     "dev": "ts-node-dev --respawn --transpile-only --watch src dev-runner.cjs",
     "build": "tsc -p tsconfig.build.json",
     "start:prod": "node dist/main.js",
-    "migrate": "ts-node --esm src/scripts/migrate.ts",
-    "seed": "ts-node --esm src/scripts/seed.ts",
+    "migrate": "cross-env PRISMA_MIGRATION_ENGINE_ADVISORY_LOCK_TIMEOUT=60000 prisma migrate deploy",
+    "migrate:dev": "cross-env PRISMA_MIGRATION_ENGINE_ADVISORY_LOCK_TIMEOUT=60000 prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "seed": "prisma db seed",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
+    "@b2b-rental/shared": "workspace:*",
     "@nestjs/axios": "^3.0.0",
     "@nestjs/common": "^10.3.2",
     "@nestjs/config": "^3.1.1",
     "@nestjs/core": "^10.3.2",
     "@nestjs/platform-express": "^10.3.2",
     "@nestjs/swagger": "^7.2.2",
-    "@b2b-rental/shared": "workspace:*",
+    "@prisma/client": "^5.19.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "reflect-metadata": "^0.1.13",
@@ -28,7 +31,11 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "prisma": "^5.19.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0"
+  },
+  "prisma": {
+    "seed": "ts-node --esm prisma/seed.ts"
   }
 }

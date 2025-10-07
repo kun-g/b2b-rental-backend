@@ -8,7 +8,9 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "format": "turbo run format"
+    "format": "turbo run format",
+    "migrate": "turbo run migrate --filter=@b2b-rental/core",
+    "seed": "turbo run seed --filter=@b2b-rental/core"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

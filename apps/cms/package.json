@@ -13,11 +13,15 @@
   "dependencies": {
     "@payloadcms/db-postgres": "3.58.0",
     "@payloadcms/next": "3.58.0",
+    "@payloadcms/richtext-lexical": "^3.58.0",
+    "dotenv": "^17.2.3",
+    "graphql": "^16.11.0",
     "next": "15.5.4",
     "payload": "3.58.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "scheduler": "0.25.0"
+    "scheduler": "0.25.0",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
