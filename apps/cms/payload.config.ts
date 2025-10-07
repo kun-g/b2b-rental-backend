@@ -50,8 +50,9 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL ?? ''
     }
   }),
-  secret: process.env.PAYLOAD_SECRET ?? 'dev-payload',
+  secret: process.env.PAYLOAD_SECRET || (() => {
+    throw new Error('PAYLOAD_SECRET environment variable is required');
+  })(),
   typescript: {
-    outputFile: path.resolve(dirname, './payload-types.ts')
   }
 });
