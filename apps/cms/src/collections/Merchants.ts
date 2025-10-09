@@ -18,9 +18,10 @@ export const Merchants: CollectionConfig = {
         return true
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
         return {
           id: {
-            equals: user.merchant,
+            equals: merchantId,
           },
         }
       }
@@ -30,17 +31,7 @@ export const Merchants: CollectionConfig = {
       return user?.role === 'platform_admin' || user?.role === 'platform_operator'
     },
     update: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
-        return true
-      }
-      if (user?.role === 'merchant_admin') {
-        return {
-          id: {
-            equals: user.merchant,
-          },
-        }
-      }
-      return false
+      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
     },
     delete: ({ req: { user } }) => {
       return user?.role === 'platform_admin'

@@ -39,6 +39,17 @@ export const Categories: CollectionConfig = {
       admin: {
         description: '留空表示顶级类目',
       },
+      // 过滤选项：不能选择自己作为父类目
+      filterOptions: ({ id }) => {
+        if (id) {
+          return {
+            id: {
+              not_equals: id,
+            },
+          }
+        }
+        return true
+      },
     },
     {
       name: 'path',
@@ -71,6 +82,47 @@ export const Categories: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
+      // 验证：不能选择自己或子孙节点作为父类目
+      async ({ data, req, operation, originalDoc }) => {
+        if (operation === 'update' && data.parent) {
+          const currentId = originalDoc.id
+
+          // 检查是否选择了自己
+          if (data.parent === currentId) {
+            throw new Error('不能选择自己作为父类目')
+          }
+
+          // 检查是否选择了自己的子孙节点（防止循环引用）
+          const checkCircular = async (parentId: string): Promise<boolean> => {
+            if (parentId === currentId) {
+              return true // 发现循环引用
+            }
+
+            try {
+              const parent = await req.payload.findByID({
+                collection: 'categories',
+                id: parentId,
+              })
+
+              if (parent.parent) {
+                return await checkCircular(parent.parent)
+              }
+            } catch (error) {
+              // 如果查询失败，说明父类目不存在，允许保存
+              return false
+            }
+
+            return false
+          }
+
+          const hasCircular = await checkCircular(data.parent)
+          if (hasCircular) {
+            throw new Error('不能选择自己的子孙节点作为父类目，这会造成循环引用')
+          }
+        }
+
+        return data
+      },
       // 自动生成 path
       async ({ data, req, operation }) => {
         if (operation === 'create' || operation === 'update') {

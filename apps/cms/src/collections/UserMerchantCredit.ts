@@ -19,9 +19,10 @@ export const UserMerchantCredit: CollectionConfig = {
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
         // 商户只能看到自己发出的授信
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
         return {
           merchant: {
-            equals: user.merchant,
+            equals: merchantId,
           },
         }
       }
@@ -43,9 +44,10 @@ export const UserMerchantCredit: CollectionConfig = {
         return true
       }
       if (user?.role === 'merchant_admin') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
         return {
           merchant: {
-            equals: user.merchant,
+            equals: merchantId,
           },
         }
       }
@@ -56,9 +58,10 @@ export const UserMerchantCredit: CollectionConfig = {
         return true
       }
       if (user?.role === 'merchant_admin') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
         return {
           merchant: {
-            equals: user.merchant,
+            equals: merchantId,
           },
         }
       }

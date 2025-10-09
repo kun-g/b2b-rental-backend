@@ -18,9 +18,10 @@ export const MerchantSKUs: CollectionConfig = {
         return true
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
         return {
           merchant: {
-            equals: user.merchant,
+            equals: merchantId,
           },
         }
       }
@@ -36,9 +37,10 @@ export const MerchantSKUs: CollectionConfig = {
         return true
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
         return {
           merchant: {
-            equals: user.merchant,
+            equals: merchantId,
           },
         }
       }
@@ -49,9 +51,10 @@ export const MerchantSKUs: CollectionConfig = {
         return true
       }
       if (user?.role === 'merchant_admin') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
         return {
           merchant: {
-            equals: user.merchant,
+            equals: merchantId,
           },
         }
       }
