@@ -17,11 +17,9 @@ export const Users: CollectionConfig = {
     defaultColumns: ['username', 'phone', 'email', 'role', 'status', 'updatedAt'],
     group: '账号管理',
   },
-  // 限制只有特定角色可以访问 Admin Panel
   access: {
-    // Admin Panel 访问控制
+    // Admin Panel 访问控制 - 允许访问后台的角色
     admin: ({ req: { user } }) => {
-      // 允许访问 Admin 的角色
       const allowedRoles = [
         'platform_admin',
         'platform_operator',
@@ -31,11 +29,31 @@ export const Users: CollectionConfig = {
       ]
       return allowedRoles.includes(user?.role)
     },
-    // 其他 CRUD 权限保持不变
-    create: () => true,
-    read: () => true,
-    update: ({ req: { user } }) => !!user,
-    delete: ({ req: { user } }) => user?.role === 'platform_admin',
+    // 用户管理权限 - 只有 platform_admin 和 platform_operator 可以操作
+    create: ({ req: { user } }) => {
+      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
+    },
+    read: ({ req: { user } }) => {
+      // 只有 platform_admin 和 platform_operator 可以查看用户列表
+      // 其他角色只能查看自己的信息（通过 /api/users/me）
+      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+        return true // 可以查看所有用户
+      }
+      // 其他角色只能查看自己
+      return {
+        id: {
+          equals: user?.id,
+        },
+      }
+    },
+    update: ({ req: { user } }) => {
+      // 只有 platform_admin 和 platform_operator 可以修改用户
+      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
+    },
+    delete: ({ req: { user } }) => {
+      // 只有 platform_admin 可以删除用户
+      return user?.role === 'platform_admin'
+    },
   },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天
