@@ -28,8 +28,13 @@ export default async function HomePage() {
           />
         </picture>
         {!user && <h1>Welcome to your new project.</h1>}
-        {user && <h1>Welcome back, {user.email}</h1>}
+        {user && <h1>Welcome back, {user.username || user.email}</h1>}
         <div className="links">
+          {user && user.role === 'customer' && (
+            <a className="admin" href="/use-invitation">
+              使用邀请码获得授信
+            </a>
+          )}
           <a
             className="admin"
             href={payloadConfig.routes.admin}

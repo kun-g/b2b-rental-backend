@@ -131,15 +131,41 @@ export const UserMerchantCredit: CollectionConfig = {
       name: 'status',
       type: 'select',
       required: true,
-      defaultValue: 'enabled',
+      defaultValue: 'active',
       label: '状态',
       options: [
-        { label: '已启用', value: 'enabled' },
-        { label: '已禁用', value: 'disabled' },
-        { label: '已冻结', value: 'frozen' },
+        { label: '启用', value: 'active' },
+        { label: '禁用', value: 'disabled' },
+        { label: '冻结', value: 'frozen' },
       ],
       admin: {
         description: '禁用后用户无法查看商户SKU和下单',
+      },
+    },
+    {
+      name: 'source',
+      type: 'select',
+      required: true,
+      defaultValue: 'manual',
+      label: '来源',
+      options: [
+        { label: '手动创建', value: 'manual' },
+        { label: '邀请码', value: 'invitation' },
+      ],
+      admin: {
+        description: '授信记录的创建来源',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'invitation_usage',
+      type: 'relationship',
+      relationTo: 'credit-invitation-usages',
+      label: '邀请码使用记录',
+      admin: {
+        description: '通过邀请码创建的授信记录关联的使用记录',
+        condition: (data) => data.source === 'invitation',
+        readOnly: true,
       },
     },
     {

@@ -74,6 +74,8 @@ export interface Config {
     devices: Device;
     'shipping-templates': ShippingTemplate;
     'user-merchant-credit': UserMerchantCredit;
+    'credit-invitations': CreditInvitation;
+    'credit-invitation-usages': CreditInvitationUsage;
     orders: Order;
     logistics: Logistic;
     payments: Payment;
@@ -94,6 +96,8 @@ export interface Config {
     devices: DevicesSelect<false> | DevicesSelect<true>;
     'shipping-templates': ShippingTemplatesSelect<false> | ShippingTemplatesSelect<true>;
     'user-merchant-credit': UserMerchantCreditSelect<false> | UserMerchantCreditSelect<true>;
+    'credit-invitations': CreditInvitationsSelect<false> | CreditInvitationsSelect<true>;
+    'credit-invitation-usages': CreditInvitationUsagesSelect<false> | CreditInvitationUsagesSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     logistics: LogisticsSelect<false> | LogisticsSelect<true>;
     payments: PaymentsSelect<false> | PaymentsSelect<true>;
@@ -706,7 +710,15 @@ export interface UserMerchantCredit {
   /**
    * 禁用后用户无法查看商户SKU和下单
    */
-  status: 'enabled' | 'disabled' | 'frozen';
+  status: 'active' | 'disabled' | 'frozen';
+  /**
+   * 授信记录的创建来源
+   */
+  source: 'manual' | 'invitation';
+  /**
+   * 通过邀请码创建的授信记录关联的使用记录
+   */
+  invitation_usage?: (number | null) | CreditInvitationUsage;
   granted_at?: string | null;
   /**
    * 商户管理员
@@ -728,6 +740,95 @@ export interface UserMerchantCredit {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * 邀请码使用记录，用于追踪和审计
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "credit-invitation-usages".
+ */
+export interface CreditInvitationUsage {
+  id: number;
+  /**
+   * 使用邀请码的用户
+   */
+  user: number | User;
+  /**
+   * 邀请码所属商户
+   */
+  merchant: number | Merchant;
+  /**
+   * 使用的邀请码记录
+   */
+  invitation: number | CreditInvitation;
+  /**
+   * 冗余存储，方便查看
+   */
+  invitation_code: string;
+  /**
+   * 本次授信的额度（元）
+   */
+  credit_amount: number;
+  /**
+   * 创建的授信记录
+   */
+  credit_record?: (number | null) | UserMerchantCredit;
+  used_at: string;
+  /**
+   * 用户使用邀请码时的IP地址，用于风控
+   */
+  ip_address?: string | null;
+  /**
+   * 用户使用邀请码时的浏览器信息
+   */
+  user_agent?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "credit-invitations".
+ */
+export interface CreditInvitation {
+  id: number;
+  /**
+   * 该邀请码所属的商户
+   */
+  merchant: number | Merchant;
+  /**
+   * 唯一邀请码，自动生成（8-12位字母数字组合）
+   */
+  invitation_code: string;
+  /**
+   * 使用此邀请码申请的授信额度（单位：元）
+   */
+  credit_limit: number;
+  /**
+   * 邀请码从创建起的有效天数
+   */
+  validity_days: number;
+  /**
+   * 留空表示无限次使用
+   */
+  max_uses?: number | null;
+  /**
+   * 已成功使用该邀请码的次数
+   */
+  used_count?: number | null;
+  /**
+   * 激活=可使用，暂停=临时停用，过期=自动失效
+   */
+  status: 'active' | 'paused' | 'expired';
+  /**
+   * 自动根据有效天数计算
+   */
+  expires_at?: string | null;
+  /**
+   * 内部备注，如"VIP客户专用"、"展会活动"
+   */
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -818,6 +919,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'user-merchant-credit';
         value: number | UserMerchantCredit;
+      } | null)
+    | ({
+        relationTo: 'credit-invitations';
+        value: number | CreditInvitation;
+      } | null)
+    | ({
+        relationTo: 'credit-invitation-usages';
+        value: number | CreditInvitationUsage;
       } | null)
     | ({
         relationTo: 'orders';
@@ -1059,6 +1168,8 @@ export interface UserMerchantCreditSelect<T extends boolean = true> {
   used_credit?: T;
   available_credit?: T;
   status?: T;
+  source?: T;
+  invitation_usage?: T;
   granted_at?: T;
   granted_by?: T;
   revoked_at?: T;
@@ -1074,6 +1185,40 @@ export interface UserMerchantCreditSelect<T extends boolean = true> {
         operator?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "credit-invitations_select".
+ */
+export interface CreditInvitationsSelect<T extends boolean = true> {
+  merchant?: T;
+  invitation_code?: T;
+  credit_limit?: T;
+  validity_days?: T;
+  max_uses?: T;
+  used_count?: T;
+  status?: T;
+  expires_at?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "credit-invitation-usages_select".
+ */
+export interface CreditInvitationUsagesSelect<T extends boolean = true> {
+  user?: T;
+  merchant?: T;
+  invitation?: T;
+  invitation_code?: T;
+  credit_amount?: T;
+  credit_record?: T;
+  used_at?: T;
+  ip_address?: T;
+  user_agent?: T;
   updatedAt?: T;
   createdAt?: T;
 }

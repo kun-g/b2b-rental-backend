@@ -18,17 +18,6 @@ export const Users: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // Admin Panel 访问控制 - 允许访问后台的角色
-    admin: ({ req: { user } }) => {
-      const allowedRoles = [
-        'platform_admin',
-        'platform_operator',
-        'platform_support',
-        'merchant_admin',
-        'merchant_member',
-      ]
-      return allowedRoles.includes(user?.role)
-    },
     // 用户管理权限 - 只有 platform_admin 和 platform_operator 可以操作
     create: ({ req: { user } }) => {
       return user?.role === 'platform_admin' || user?.role === 'platform_operator'
