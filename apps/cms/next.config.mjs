@@ -1,17 +1,17 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { withPayload } from '@payloadcms/next/withPayload';
+import { withPayload } from '@payloadcms/next/withPayload'
 
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Your Next.js config here
+  webpack: (webpackConfig) => {
+    webpackConfig.resolve.extensionAlias = {
+      '.cjs': ['.cts', '.cjs'],
+      '.js': ['.ts', '.tsx', '.js', '.jsx'],
+      '.mjs': ['.mts', '.mjs'],
+    }
 
-export default withPayload(
-  {
-    reactStrictMode: true,
-    typedRoutes: true,
-    output: 'standalone'
+    return webpackConfig
   },
-  {
-    configPath: path.resolve(dirname, './payload.config.ts')
-  }
-);
+}
+
+export default withPayload(nextConfig, { devBundleServerPackages: false })

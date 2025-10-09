@@ -6,6 +6,7 @@
   "packageManager": "pnpm@8.15.4",
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:payload": "pnpm --filter=@b2b-rental/cms run dev",
     "build": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run build",
     "lint": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run lint",
     "format": "cross-env TURBO_DISABLE_KEYCHAIN=1 TURBO_API= turbo run format",
