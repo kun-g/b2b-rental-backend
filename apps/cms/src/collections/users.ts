@@ -17,6 +17,26 @@ export const Users: CollectionConfig = {
     defaultColumns: ['username', 'phone', 'email', 'role', 'status', 'updatedAt'],
     group: '账号管理',
   },
+  // 限制只有特定角色可以访问 Admin Panel
+  access: {
+    // Admin Panel 访问控制
+    admin: ({ req: { user } }) => {
+      // 允许访问 Admin 的角色
+      const allowedRoles = [
+        'platform_admin',
+        'platform_operator',
+        'platform_support',
+        'merchant_admin',
+        'merchant_member',
+      ]
+      return allowedRoles.includes(user?.role)
+    },
+    // 其他 CRUD 权限保持不变
+    create: () => true,
+    read: () => true,
+    update: ({ req: { user } }) => !!user,
+    delete: ({ req: { user } }) => user?.role === 'platform_admin',
+  },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天
     verify: false, // MVP阶段可选

@@ -31,20 +31,6 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
-    // 限制只有平台人员（管理员、运营、客服、商户）可以访问 Admin 后台
-    // 普通用户（customer）无法访问
-    access: {
-      '/': ({ req }) => {
-        const allowedRoles = [
-          'platform_admin',
-          'platform_operator',
-          'platform_support',
-          'merchant_admin',
-          'merchant_member',
-        ]
-        return allowedRoles.includes(req.user?.role)
-      },
-    },
   },
   collections: [
     // 账号管理
