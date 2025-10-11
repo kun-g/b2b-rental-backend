@@ -1,57 +1,50 @@
 version: '3.9'
 
 services:
+  # PostgreSQL 数据库服务
   postgres:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: rental
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-rental}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
-      interval: 5s
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-rental}']
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - backend
 
-  core:
-    build:
-      context: .
-      dockerfile: apps/core/Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: \
-        ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/rental?schema=public}
-      CORE_PORT: ${CORE_PORT:-4001}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret}
-    ports:
-      - '4001:4001'
-    networks:
-      - backend
-
+  # CMS 应用服务 (Next.js + Payload CMS)
   cms:
     build:
       context: .
       dockerfile: apps/cms/Dockerfile
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: \
-        ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/rental?schema=public}
-      CMS_PORT: ${CMS_PORT:-4002}
-      PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dev-payload}
+      # 数据库连接 (Payload 使用 DATABASE_URI)
+      DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-rental}
+
+      # Payload CMS 配置
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dev-payload-secret-change-in-production}
+
+      # Next.js 配置
       NODE_ENV: production
+      PORT: 3000
+      NEXT_TELEMETRY_DISABLED: 1
     ports:
-      - '4002:4002'
+      - '${CMS_PORT:-3000}:3000'
     networks:
       - backend
 

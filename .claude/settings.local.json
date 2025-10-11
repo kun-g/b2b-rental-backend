@@ -5,7 +5,10 @@
       "Bash(pnpm build:*)",
       "Bash(pnpm remove:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(docker search:*)",
+      "WebSearch",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
