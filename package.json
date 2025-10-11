@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@8.15.4",
   "scripts": {
     "dev": "turbo run dev --parallel",
     "dev:payload": "pnpm --filter=@b2b-rental/cms run dev",

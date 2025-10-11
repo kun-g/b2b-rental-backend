@@ -6,7 +6,7 @@ import React, { useState } from 'react'
  * 邀请码使用页面
  * 用户可以在此页面输入邀请码并获得授信
  */
-export const UseInvitationCodePage: React.FC = () => {
+const UseInvitationCodePage: React.FC = () => {
   const [invitationCode, setInvitationCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [validating, setValidating] = useState(false)
@@ -252,3 +252,5 @@ export const UseInvitationCodePage: React.FC = () => {
     </div>
   )
 }
+
+export default UseInvitationCodePage

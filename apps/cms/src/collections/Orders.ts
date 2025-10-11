@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { calculateShippingFee } from '../utils/calculateShipping'
 
 /**
  * Orders Collection - 订单管理（核心业务流）
@@ -88,8 +89,11 @@ export const Orders: CollectionConfig = {
       name: 'merchant',
       type: 'relationship',
       relationTo: 'merchants',
-      required: true,
       label: '商户',
+      admin: {
+        description: '自动从 SKU 中获取',
+        readOnly: true,
+      },
     },
     {
       name: 'merchant_sku',
@@ -183,30 +187,27 @@ export const Orders: CollectionConfig = {
     {
       name: 'daily_fee_snapshot',
       type: 'number',
-      required: true,
       label: '日租金快照（元）',
       admin: {
-        description: '下单时SKU的日租金',
+        description: '下单时SKU的日租金(自动从SKU获取)',
         readOnly: true,
       },
     },
     {
       name: 'device_value_snapshot',
       type: 'number',
-      required: true,
       label: '设备价值快照（元）',
       admin: {
-        description: '用于授信冻结',
+        description: '用于授信冻结(自动从SKU获取)',
         readOnly: true,
       },
     },
     {
-      name: 'shipping_fee_snapshot',
+      name: 'shipping_fee',
       type: 'number',
-      required: true,
-      label: '运费快照（元）',
+      label: '运费（元）',
       admin: {
-        description: '下单时计算的运费',
+        description: '下单时计算的运费(自动计算)',
         readOnly: true,
       },
     },
@@ -216,15 +217,7 @@ export const Orders: CollectionConfig = {
       relationTo: 'shipping-templates',
       label: '运费模板',
       admin: {
-        description: '订单使用的运费模板',
-      },
-    },
-    {
-      name: 'shipping_template_version',
-      type: 'number',
-      label: '运费模板版本',
-      admin: {
-        description: '用于追溯',
+        description: '订单使用的运费模板（自动从 SKU 获取）',
         readOnly: true,
       },
     },
@@ -282,46 +275,6 @@ export const Orders: CollectionConfig = {
           name: 'region_code',
           type: 'text',
           label: '地区编码',
-        },
-      ],
-    },
-    {
-      name: 'address_change_count',
-      type: 'number',
-      defaultValue: 0,
-      label: '改址次数',
-      admin: {
-        description: '待发货期改址次数，≤2次',
-        readOnly: true,
-      },
-    },
-    {
-      name: 'address_change_history',
-      type: 'array',
-      label: '改址历史',
-      admin: {
-        readOnly: true,
-      },
-      fields: [
-        {
-          name: 'changed_at',
-          type: 'date',
-          label: '改址时间',
-        },
-        {
-          name: 'old_address',
-          type: 'textarea',
-          label: '原地址',
-        },
-        {
-          name: 'new_address',
-          type: 'textarea',
-          label: '新地址',
-        },
-        {
-          name: 'fee_diff',
-          type: 'number',
-          label: '运费差额（元）',
         },
       ],
     },
@@ -384,7 +337,7 @@ export const Orders: CollectionConfig = {
       type: 'number',
       label: '订单总额（元）',
       admin: {
-        description: '租金 + 运费 + 逾期 + 改址差额',
+        description: '租金 + 运费 + 逾期',
         readOnly: true,
       },
     },
@@ -392,37 +345,6 @@ export const Orders: CollectionConfig = {
       name: 'notes',
       type: 'textarea',
       label: '备注',
-    },
-    {
-      name: 'blacklist_exemption',
-      type: 'group',
-      label: '不发地区豁免',
-      admin: {
-        description: '平台豁免不发地区的记录',
-      },
-      fields: [
-        {
-          name: 'is_exempted',
-          type: 'checkbox',
-          label: '是否豁免',
-        },
-        {
-          name: 'exempted_at',
-          type: 'date',
-          label: '豁免时间',
-        },
-        {
-          name: 'exempted_by',
-          type: 'relationship',
-          relationTo: 'users',
-          label: '豁免人',
-        },
-        {
-          name: 'reason',
-          type: 'textarea',
-          label: '豁免原因',
-        },
-      ],
     },
     {
       name: 'status_history',
@@ -464,6 +386,93 @@ export const Orders: CollectionConfig = {
         // 创建订单时生成订单号
         if (operation === 'create') {
           data.order_no = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
+          // 从 SKU 中获取商户、价格快照等信息
+          if (data.merchant_sku) {
+            const skuId = typeof data.merchant_sku === 'object' ? data.merchant_sku.id : data.merchant_sku
+
+            // 查询 SKU 详细信息
+            const sku = await req.payload.findByID({
+              collection: 'merchant-skus',
+              id: skuId,
+              depth: 1,
+            })
+
+            if (sku) {
+              // 自动填充商户
+              data.merchant = typeof sku.merchant === 'object' ? sku.merchant.id : sku.merchant
+
+              // 自动填充价格快照
+              data.daily_fee_snapshot = sku.daily_fee
+              data.device_value_snapshot = sku.device_value
+
+              // 获取运费模板（优先使用 SKU 的，如果没有则需要从商户获取默认的）
+              let shippingTemplateId = sku.shipping_template
+                ? typeof sku.shipping_template === 'object'
+                  ? sku.shipping_template.id
+                  : sku.shipping_template
+                : null
+
+              // 如果 SKU 没有运费模板，从商户获取默认模板
+              if (!shippingTemplateId) {
+                const merchantTemplates = await req.payload.find({
+                  collection: 'shipping-templates',
+                  where: {
+                    and: [
+                      {
+                        merchant: {
+                          equals: data.merchant,
+                        },
+                      },
+                      {
+                        is_default: {
+                          equals: true,
+                        },
+                      },
+                      {
+                        status: {
+                          equals: 'active',
+                        },
+                      },
+                    ],
+                  },
+                  limit: 1,
+                })
+
+                if (merchantTemplates.docs.length > 0) {
+                  shippingTemplateId = merchantTemplates.docs[0].id
+                }
+              }
+
+              // 保存运费模板 ID
+              data.shipping_template_id = shippingTemplateId
+
+              // 计算运费
+              if (shippingTemplateId && data.shipping_address) {
+                // 查询运费模板详情
+                const shippingTemplate = await req.payload.findByID({
+                  collection: 'shipping-templates',
+                  id: shippingTemplateId,
+                })
+
+                if (shippingTemplate) {
+                  const shippingResult = calculateShippingFee(shippingTemplate, data.shipping_address)
+
+                  // 检查是否为黑名单地区
+                  if (shippingResult.isBlacklisted) {
+                    throw new Error(
+                      `该地址不在配送范围内: ${shippingResult.blacklistReason || '该地区不发货'}`,
+                    )
+                  }
+
+                  // 设置运费
+                  data.shipping_fee = shippingResult.fee
+                }
+              } else if (!shippingTemplateId) {
+                throw new Error('无法找到可用的运费模板，请联系商户')
+              }
+            }
+          }
 
           // 计算租期天数
           const startDate = new Date(data.rent_start_date)

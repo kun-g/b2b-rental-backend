@@ -25,7 +25,6 @@ import { Statements } from './collections/Statements'
 import { AuditLogs } from './collections/AuditLogs'
 import { validateInvitationCode } from './endpoints/validateInvitationCode'
 import { useInvitationCode } from './endpoints/useInvitationCode'
-import { UseInvitationCodePage } from './components/UseInvitationCodePage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -39,7 +38,7 @@ export default buildConfig({
     components: {
       views: {
         'use-invitation-code': {
-          Component: UseInvitationCodePage,
+          Component: './components/UseInvitationCodePage',
           path: '/use-invitation-code',
         },
       },
@@ -85,6 +84,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
+    push: true, // 开发模式:自动同步表结构,不需要迁移文件
   }),
   sharp,
   plugins: [

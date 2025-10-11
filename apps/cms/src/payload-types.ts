@@ -459,7 +459,10 @@ export interface Order {
    */
   order_no: string;
   user: number | User;
-  merchant: number | Merchant;
+  /**
+   * 自动从 SKU 中获取
+   */
+  merchant?: (number | null) | Merchant;
   merchant_sku: number | MerchantSkus;
   /**
    * 发货时绑定设备SN
@@ -484,25 +487,21 @@ export interface Order {
    */
   timezone?: string | null;
   /**
-   * 下单时SKU的日租金
+   * 下单时SKU的日租金(自动从SKU获取)
    */
-  daily_fee_snapshot: number;
+  daily_fee_snapshot?: number | null;
   /**
-   * 用于授信冻结
+   * 用于授信冻结(自动从SKU获取)
    */
-  device_value_snapshot: number;
+  device_value_snapshot?: number | null;
   /**
-   * 下单时计算的运费
+   * 下单时计算的运费(自动计算)
    */
-  shipping_fee_snapshot: number;
+  shipping_fee?: number | null;
   /**
-   * 订单使用的运费模板
+   * 订单使用的运费模板（自动从 SKU 获取）
    */
   shipping_template_id?: (number | null) | ShippingTemplate;
-  /**
-   * 用于追溯
-   */
-  shipping_template_version?: number | null;
   /**
    * 按设备价值冻结，完成时释放
    */
@@ -516,19 +515,6 @@ export interface Order {
     address: string;
     region_code?: string | null;
   };
-  /**
-   * 待发货期改址次数，≤2次
-   */
-  address_change_count?: number | null;
-  address_change_history?:
-    | {
-        changed_at?: string | null;
-        old_address?: string | null;
-        new_address?: string | null;
-        fee_diff?: number | null;
-        id?: string | null;
-      }[]
-    | null;
   logistics?: (number | null) | Logistic;
   payments?: (number | Payment)[] | null;
   surcharges?: (number | Surcharge)[] | null;
@@ -540,19 +526,10 @@ export interface Order {
    */
   overdue_amount?: number | null;
   /**
-   * 租金 + 运费 + 逾期 + 改址差额
+   * 租金 + 运费 + 逾期
    */
   total_amount?: number | null;
   notes?: string | null;
-  /**
-   * 平台豁免不发地区的记录
-   */
-  blacklist_exemption?: {
-    is_exempted?: boolean | null;
-    exempted_at?: string | null;
-    exempted_by?: (number | null) | User;
-    reason?: string | null;
-  };
   status_history?:
     | {
         status: string;
@@ -1240,9 +1217,8 @@ export interface OrdersSelect<T extends boolean = true> {
   timezone?: T;
   daily_fee_snapshot?: T;
   device_value_snapshot?: T;
-  shipping_fee_snapshot?: T;
+  shipping_fee?: T;
   shipping_template_id?: T;
-  shipping_template_version?: T;
   credit_hold_amount?: T;
   shipping_address?:
     | T
@@ -1255,16 +1231,6 @@ export interface OrdersSelect<T extends boolean = true> {
         address?: T;
         region_code?: T;
       };
-  address_change_count?: T;
-  address_change_history?:
-    | T
-    | {
-        changed_at?: T;
-        old_address?: T;
-        new_address?: T;
-        fee_diff?: T;
-        id?: T;
-      };
   logistics?: T;
   payments?: T;
   surcharges?: T;
@@ -1274,14 +1240,6 @@ export interface OrdersSelect<T extends boolean = true> {
   overdue_amount?: T;
   total_amount?: T;
   notes?: T;
-  blacklist_exemption?:
-    | T
-    | {
-        is_exempted?: T;
-        exempted_at?: T;
-        exempted_by?: T;
-        reason?: T;
-      };
   status_history?:
     | T
     | {
