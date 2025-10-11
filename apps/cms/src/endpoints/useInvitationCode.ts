@@ -4,7 +4,7 @@ export const useInvitationCode: Endpoint = {
   path: '/credit-invitations/use',
   method: 'post',
   handler: async (req) => {
-    const { invitation_code } = await req.json()
+    const { invitation_code } = await req.json?.()
 
     if (!invitation_code) {
       return Response.json({ success: false, message: '请输入邀请码' }, { status: 400 })
@@ -35,7 +35,7 @@ export const useInvitationCode: Endpoint = {
       }
 
       const now = new Date()
-      const expiresAt = new Date(invitation.expires_at)
+      const expiresAt = new Date(invitation.expires_at!)
       if (now > expiresAt) {
         await req.payload.update({
           collection: 'credit-invitations',

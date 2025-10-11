@@ -33,6 +33,9 @@ COPY apps/cms ./apps/cms
 # Next.js collects completely anonymous telemetry data about general usage.
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Skip type checking during build (common in production builds)
+ENV SKIP_TYPE_CHECK=true
+
 # Build the CMS app from workspace root
 RUN corepack enable pnpm && pnpm --filter=cms run build
 

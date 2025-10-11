@@ -50,7 +50,6 @@ export const Users: CollectionConfig = {
     maxLoginAttempts: 5,
     lockTime: 2 * 60 * 60 * 1000, // 2小时锁定
     useAPIKey: false,
-    disableLocalStrategy: false, // 保留用户名密码登录
     loginWithUsername: {
       allowEmailLogin: false, // 禁用邮箱登录
       requireEmail: false, // 邮箱不是必填项

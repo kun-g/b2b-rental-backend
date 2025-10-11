@@ -14,12 +14,13 @@ export const Orders: CollectionConfig = {
     group: '订单管理',
   },
   access: {
-    read: ({ req: { user } }) => {
+    read: ({ req: { user } }): any => {
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
         const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
         return {
           merchant: {
             equals: merchantId,
@@ -39,13 +40,14 @@ export const Orders: CollectionConfig = {
       // 只有用户可以创建订单
       return user?.role === 'customer'
     },
-    update: ({ req: { user } }) => {
+    update: ({ req: { user } }): any => {
       // 用户、商户、平台都可以更新订单（不同状态不同权限）
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
         const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
         return {
           merchant: {
             equals: merchantId,
@@ -456,7 +458,7 @@ export const Orders: CollectionConfig = {
                 })
 
                 if (shippingTemplate) {
-                  const shippingResult = calculateShippingFee(shippingTemplate, data.shipping_address)
+                  const shippingResult = calculateShippingFee(shippingTemplate as any, data.shipping_address)
 
                   // 检查是否为黑名单地区
                   if (shippingResult.isBlacklisted) {

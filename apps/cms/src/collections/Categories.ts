@@ -105,7 +105,11 @@ export const Categories: CollectionConfig = {
               })
 
               if (parent.parent) {
-                return await checkCircular(parent.parent)
+                // parent.parent 可能是 ID (number/string) 或完整对象
+                const parentParentId = typeof parent.parent === 'object'
+                  ? String(parent.parent.id)
+                  : String(parent.parent)
+                return await checkCircular(parentParentId)
               }
             } catch (error) {
               // 如果查询失败，说明父类目不存在，允许保存
@@ -115,7 +119,11 @@ export const Categories: CollectionConfig = {
             return false
           }
 
-          const hasCircular = await checkCircular(data.parent)
+          // data.parent 可能是 ID (number/string) 或完整对象
+          const parentId = typeof data.parent === 'object'
+            ? String(data.parent.id)
+            : String(data.parent)
+          const hasCircular = await checkCircular(parentId)
           if (hasCircular) {
             throw new Error('不能选择自己的子孙节点作为父类目，这会造成循环引用')
           }
@@ -127,9 +135,13 @@ export const Categories: CollectionConfig = {
       async ({ data, req, operation }) => {
         if (operation === 'create' || operation === 'update') {
           if (data.parent) {
+            // data.parent 可能是 ID (number/string) 或完整对象
+            const parentId = typeof data.parent === 'object'
+              ? String(data.parent.id)
+              : String(data.parent)
             const parent = await req.payload.findByID({
               collection: 'categories',
-              id: data.parent,
+              id: parentId,
             })
             data.path = `${parent.path}/${data.name}`
           } else {

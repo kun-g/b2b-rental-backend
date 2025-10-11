@@ -243,7 +243,7 @@ const UseInvitationCodePage: React.FC = () => {
         <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1rem' }}>使用说明</h3>
         <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
           <li>从商户获取邀请码（格式：CREDIT-XXXXXXXX）</li>
-          <li>输入邀请码并点击"使用邀请码"</li>
+          <li>输入邀请码并点击「使用邀请码」</li>
           <li>系统会自动为您创建授信记录</li>
           <li>授信成功后即可开始租赁该商户的设备</li>
           <li>每个邀请码只能使用一次</li>

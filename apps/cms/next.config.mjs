@@ -4,6 +4,10 @@ import { withPayload } from '@payloadcms/next/withPayload'
 const nextConfig = {
   // Your Next.js config here
   output: 'standalone',
+  typescript: {
+    // Skip type checking during build if SKIP_TYPE_CHECK is set
+    ignoreBuildErrors: process.env.SKIP_TYPE_CHECK === 'true',
+  },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],

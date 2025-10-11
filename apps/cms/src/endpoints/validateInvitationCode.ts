@@ -8,7 +8,7 @@ export const validateInvitationCode: Endpoint = {
   path: '/credit-invitations/validate',
   method: 'post',
   handler: async (req) => {
-    const { invitation_code } = await req.json()
+    const { invitation_code } = await req.json?.()
 
     if (!invitation_code) {
       return Response.json(

@@ -13,13 +13,14 @@ export const UserMerchantCredit: CollectionConfig = {
     group: '授信管理',
   },
   access: {
-    read: ({ req: { user } }) => {
+    read: ({ req: { user } }): any => {
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
         // 商户只能看到自己发出的授信
         const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
         return {
           merchant: {
             equals: merchantId,
@@ -39,12 +40,13 @@ export const UserMerchantCredit: CollectionConfig = {
     create: ({ req: { user } }) => {
       return user?.role === 'merchant_admin'
     },
-    update: ({ req: { user } }) => {
+    update: ({ req: { user } }): any => {
       if (user?.role === 'platform_admin') {
         return true
       }
       if (user?.role === 'merchant_admin') {
         const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
         return {
           merchant: {
             equals: merchantId,
@@ -53,12 +55,13 @@ export const UserMerchantCredit: CollectionConfig = {
       }
       return false
     },
-    delete: ({ req: { user } }) => {
+    delete: ({ req: { user } }): any => {
       if (user?.role === 'platform_admin') {
         return true
       }
       if (user?.role === 'merchant_admin') {
         const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
         return {
           merchant: {
             equals: merchantId,

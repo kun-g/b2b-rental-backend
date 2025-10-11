@@ -19,12 +19,13 @@ export const CreditInvitationUsages: CollectionConfig = {
   },
   access: {
     // 用户可见自己的，商户可见自己商户的，平台可见所有
-    read: ({ req: { user } }) => {
+    read: ({ req: { user } }): any => {
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
       if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
         const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
         return {
           merchant: {
             equals: merchantId,

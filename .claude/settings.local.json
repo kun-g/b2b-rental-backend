@@ -8,7 +8,11 @@
       "Bash(cat:*)",
       "Bash(docker search:*)",
       "WebSearch",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(docker compose build:*)",
+      "Bash(pnpm --filter=cms run build)",
+      "Bash(xargs -I {} bash -c 'echo \"\"\"\"{}:\"\"\"\"; sed -n \"\"\"\"16p\"\"\"\" \"\"\"\"{}\"\"\"\"')",
+      "Bash(SKIP_TYPE_CHECK=true pnpm --filter=cms run build:*)"
     ],
     "deny": [],
     "ask": []

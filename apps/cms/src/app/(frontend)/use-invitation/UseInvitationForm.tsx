@@ -311,8 +311,8 @@ export const UseInvitationForm: React.FC<UseInvitationFormProps> = ({ user }) =>
         <ol style={{ margin: 0, paddingLeft: '1.5rem', lineHeight: '1.8' }}>
           <li>从商户获取邀请码（格式：CREDIT-XXXXXXXX）</li>
           <li>在上方输入框中输入邀请码</li>
-          <li>点击"验证邀请码"查看详情（可选）</li>
-          <li>点击"立即使用"完成授信</li>
+          <li>点击「验证邀请码」查看详情（可选）</li>
+          <li>点击「立即使用」完成授信</li>
           <li>授信成功后即可开始租赁该商户的设备</li>
         </ol>
         <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.85rem', fontStyle: 'italic' }}>
