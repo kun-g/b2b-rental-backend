@@ -45,7 +45,7 @@ export const useInvitationCode: Endpoint = {
         return Response.json({ success: false, message: '邀请码已过期' })
       }
 
-      if (invitation.max_uses && invitation.used_count >= invitation.max_uses) {
+      if (invitation.max_uses && (invitation.used_count ?? 0) >= invitation.max_uses) {
         return Response.json({ success: false, message: '邀请码已达使用上限' })
       }
 
@@ -99,7 +99,7 @@ export const useInvitationCode: Endpoint = {
         data: { used_count: (invitation.used_count || 0) + 1 },
       })
 
-      if (invitation.max_uses && invitation.used_count + 1 >= invitation.max_uses) {
+      if (invitation.max_uses && (invitation.used_count ?? 0) + 1 >= invitation.max_uses) {
         await req.payload.update({
           collection: 'credit-invitations',
           id: invitation.id,
@@ -113,9 +113,13 @@ export const useInvitationCode: Endpoint = {
         data: { invitation_usage: usageRecord.id },
       })
 
+      const merchantId = typeof invitation.merchant === 'object'
+        ? invitation.merchant.id
+        : invitation.merchant
+
       const merchant = await req.payload.findByID({
         collection: 'merchants',
-        id: invitation.merchant as string,
+        id: String(merchantId),
       })
 
       return Response.json({

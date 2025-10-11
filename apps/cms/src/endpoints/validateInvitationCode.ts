@@ -51,7 +51,7 @@ export const validateInvitationCode: Endpoint = {
 
       // 检查过期时间
       const now = new Date()
-      const expiresAt = new Date(invitation.expires_at)
+      const expiresAt = new Date(invitation.expires_at!)
       if (now > expiresAt) {
         // 自动标记为过期
         await req.payload.update({
@@ -68,7 +68,7 @@ export const validateInvitationCode: Endpoint = {
       }
 
       // 检查使用次数
-      if (invitation.max_uses && invitation.used_count >= invitation.max_uses) {
+      if (invitation.max_uses && (invitation.used_count ?? 0) >= invitation.max_uses) {
         return Response.json({
           valid: false,
           message: '邀请码已达使用上限',
@@ -111,9 +111,13 @@ export const validateInvitationCode: Endpoint = {
       }
 
       // 获取商户信息
+      const merchantId = typeof invitation.merchant === 'object'
+        ? invitation.merchant.id
+        : invitation.merchant
+
       const merchant = await req.payload.findByID({
         collection: 'merchants',
-        id: invitation.merchant as string,
+        id: String(merchantId),
       })
 
       return Response.json({

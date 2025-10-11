@@ -13,7 +13,7 @@ const UseInvitationCodePage: React.FC = () => {
   const [result, setResult] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
-    data?: any
+    data?: unknown
   } | null>(null)
 
   // 验证邀请码
@@ -53,7 +53,7 @@ const UseInvitationCodePage: React.FC = () => {
           message: data.message,
         })
       }
-    } catch (error) {
+    } catch (_error) {
       setResult({
         type: 'error',
         message: '验证失败，请稍后重试',
@@ -101,7 +101,7 @@ const UseInvitationCodePage: React.FC = () => {
           message: data.message,
         })
       }
-    } catch (error) {
+    } catch (_error) {
       setResult({
         type: 'error',
         message: '使用失败，请稍后重试',

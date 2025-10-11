@@ -3,8 +3,15 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+interface User {
+  id?: string | number
+  username?: string
+  email?: string | null
+  collection?: string
+}
+
 interface UseInvitationFormProps {
-  user: any
+  user: User
 }
 
 export const UseInvitationForm: React.FC<UseInvitationFormProps> = ({ user }) => {
@@ -15,7 +22,7 @@ export const UseInvitationForm: React.FC<UseInvitationFormProps> = ({ user }) =>
   const [result, setResult] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
-    data?: any
+    data?: unknown
   } | null>(null)
 
   // 验证邀请码
@@ -55,7 +62,7 @@ export const UseInvitationForm: React.FC<UseInvitationFormProps> = ({ user }) =>
           message: data.message,
         })
       }
-    } catch (error) {
+    } catch (_error) {
       setResult({
         type: 'error',
         message: '验证失败，请稍后重试',
@@ -108,7 +115,7 @@ export const UseInvitationForm: React.FC<UseInvitationFormProps> = ({ user }) =>
           message: data.message,
         })
       }
-    } catch (error) {
+    } catch (_error) {
       setResult({
         type: 'error',
         message: '使用失败，请稍后重试',

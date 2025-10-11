@@ -521,7 +521,7 @@ export const Orders: CollectionConfig = {
       },
     ],
     afterChange: [
-      async ({ doc, req, operation, previousDoc }) => {
+      async ({ doc, req: _req, operation, previousDoc }) => {
         // 订单完成时释放授信
         if (operation === 'update' && previousDoc.status !== 'COMPLETED' && doc.status === 'COMPLETED') {
           // TODO: 调用授信释放逻辑

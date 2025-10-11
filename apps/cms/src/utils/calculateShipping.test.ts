@@ -1,5 +1,4 @@
 import { calculateShippingFee } from './calculateShipping'
-import type { ShippingCalculationResult } from './calculateShipping'
 
 describe('calculateShippingFee', () => {
   describe('黑名单地区检查', () => {

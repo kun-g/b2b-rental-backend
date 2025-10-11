@@ -111,7 +111,7 @@ export const Categories: CollectionConfig = {
                   : String(parent.parent)
                 return await checkCircular(parentParentId)
               }
-            } catch (error) {
+            } catch (_error) {
               // 如果查询失败，说明父类目不存在，允许保存
               return false
             }
