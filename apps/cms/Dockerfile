@@ -39,6 +39,9 @@ ENV SKIP_TYPE_CHECK=true
 # Build the CMS app from workspace root
 RUN corepack enable pnpm && pnpm --filter=cms run build
 
+# Ensure public directory exists for later COPY
+RUN mkdir -p /app/apps/cms/public
+
 
 # Production image, copy all the files and run next
 FROM base AS runner
