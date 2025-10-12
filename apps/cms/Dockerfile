@@ -53,17 +53,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy public folder if exists
-COPY --from=builder /app/apps/cms/public ./public
-
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next/static ./.next/static
+
+# Copy static files to the correct location in monorepo structure
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next/static ./apps/cms/.next/static
+
+# Copy public folder if exists
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/public ./apps/cms/public
 
 USER nextjs
 
@@ -73,4 +71,5 @@ ENV PORT=3000
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["node", "server.js"]
+# In monorepo, server.js is located at apps/cms/server.js
+CMD ["node", "apps/cms/server.js"]
