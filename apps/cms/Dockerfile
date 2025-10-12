@@ -34,6 +34,9 @@ ENV SKIP_TYPE_CHECK=true
 # Build the app
 RUN pnpm --filter=cms run build
 
+# Ensure public directory exists (Next.js public folder is optional)
+RUN mkdir -p /app/apps/cms/public
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
