@@ -42,7 +42,7 @@ services:
       PORT: 3000
       NEXT_TELEMETRY_DISABLED: 1
     ports:
-      - '${CMS_PORT:-3000}:3000'
+      - '${CMS_PORT:-3000}'
     networks:
       - backend
 

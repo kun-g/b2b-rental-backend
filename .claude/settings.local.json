@@ -12,7 +12,11 @@
       "Bash(docker compose build:*)",
       "Bash(pnpm --filter=cms run build)",
       "Bash(xargs -I {} bash -c 'echo \"\"\"\"{}:\"\"\"\"; sed -n \"\"\"\"16p\"\"\"\" \"\"\"\"{}\"\"\"\"')",
-      "Bash(SKIP_TYPE_CHECK=true pnpm --filter=cms run build:*)"
+      "Bash(SKIP_TYPE_CHECK=true pnpm --filter=cms run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: 修复 TypeScript 类型错误和 ESLint 警告\n\n- 修复 UseInvitationForm User 接口定义，支持 Payload CMS 返回类型\n- 修复邀请码端点中的空值检查和类型转换\n- 修复未使用变量的 ESLint 警告（使用 _ 前缀）\n- 移除未使用的类型导入\n- 优化类型安全性，使用 unknown 替代 any\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: 修复 Dockerfile 中 public 目录不存在导致的构建失败\n\n在 builder 阶段创建 public 目录，确保 COPY 操作不会因目录不存在而失败。\nNext.js 的 public 目录是可选的，此修复使 Dockerfile 更加健壮。\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
