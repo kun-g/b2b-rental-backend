@@ -11,34 +11,11 @@ services:
       NODE_ENV: development
     networks:
       - rent-backend-network
+      - dokploy-network
     depends_on:
       postgres:
         condition: service_healthy
     restart: "no"
-
-  postgres:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-cms}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - '5432'
-    networks:
-      rent-backend-network:
-        aliases:
-          - postgres-db
-          - rent-postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms}']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
   cms:
     build:
@@ -49,7 +26,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@rent-postgres:5432/${POSTGRES_DB:-cms}
+      DATABASE_URI: ${DATABASE_URI}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dev-payload-secret-change-in-production}
       DATABASE_PUSH: ${DATABASE_PUSH:-false}
       NODE_ENV: ${environment:-production}
@@ -58,6 +35,7 @@ services:
       - '${CMS_PORT:-3000}'
     networks:
       - rent-backend-network
+      - dokploy-network
     healthcheck:
       test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1']
       interval: 30s
