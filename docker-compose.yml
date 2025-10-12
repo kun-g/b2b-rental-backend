@@ -1,17 +1,16 @@
 services:
-  db-init:
-    profiles:
-      - ${INIT_DB:-never}  # 默认不运行，设置 INIT_DB=init 时运行
+  db-workstation:
     build:
       context: .
       dockerfile: Dockerfile
       target: seeder
+    container_name: cms-db-workstation
     environment:
       DATABASE_URI: ${DATABASE_URI:-postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms}
       NODE_ENV: development
     networks:
       - dokploy-network
-    restart: "no"
+    restart: unless-stopped  # 保持运行
 
   cms:
     build:
