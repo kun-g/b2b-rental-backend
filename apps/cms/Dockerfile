@@ -1,75 +1,74 @@
-# To use this Dockerfile, you have to set `output: 'standalone'` in your next.config.mjs file.
-# Optimized for pnpm workspace monorepo
+# Optimized for pnpm workspace monorepo with Payload CMS
+# Note: Payload CMS doesn't fully support Next.js standalone mode yet
 
 FROM node:22.17.0-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy workspace files for pnpm
+# Install dependencies
+FROM base AS deps
+# Copy workspace files
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/cms/package.json ./apps/cms/package.json
 
-# Install all workspace dependencies
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+# Install dependencies with production flag
+RUN corepack enable pnpm && \
+    pnpm install --frozen-lockfile --prod=false
 
-
-# Rebuild the source code only when needed
+# Build the application
 FROM base AS builder
-WORKDIR /app
-
 # Copy workspace configuration
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 
-# Copy installed dependencies
+# Copy dependencies
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/cms/node_modules ./apps/cms/node_modules
 
-# Copy CMS source code
+# Copy source code
 COPY apps/cms ./apps/cms
 
-# Next.js collects completely anonymous telemetry data about general usage.
+# Set build environment
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Skip type checking during build (common in production builds)
 ENV SKIP_TYPE_CHECK=true
 
-# Build the CMS app from workspace root
+# Build
 RUN corepack enable pnpm && pnpm --filter=cms run build
 
-# Ensure public directory exists for later COPY
-RUN mkdir -p /app/apps/cms/public
-
-
-# Production image, copy all the files and run next
+# Production image
 FROM base AS runner
-WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next/standalone ./
+# Copy workspace files
+COPY --from=builder /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/package.json ./
 
-# Copy static files to the correct location in monorepo structure
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next/static ./apps/cms/.next/static
+# Copy node_modules (needed for Payload CMS)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/node_modules ./apps/cms/node_modules
 
-# Copy public folder if exists
+# Copy built application
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next ./apps/cms/.next
 COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/public ./apps/cms/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/package.json ./apps/cms/package.json
+
+# Copy necessary source files for Payload CMS runtime
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/src ./apps/cms/src
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/next.config.mjs ./apps/cms/next.config.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/payload.config.ts ./apps/cms/payload.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/tsconfig.json ./apps/cms/tsconfig.json
 
 USER nextjs
 
 EXPOSE 3000
-
 ENV PORT=3000
 
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
-# In monorepo, server.js is located at apps/cms/server.js
-CMD ["node", "apps/cms/server.js"]
+WORKDIR /app/apps/cms
+
+# Start Next.js in production mode
+CMD ["pnpm", "start"]
