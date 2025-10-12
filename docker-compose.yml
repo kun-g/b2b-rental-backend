@@ -10,7 +10,10 @@ services:
     ports:
       - '5432'
     networks:
-      - rent-backend-network
+      rent-backend-network:
+        aliases:
+          - postgres-db
+          - rent-postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -29,7 +32,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cms}
+      DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@rent-postgres:5432/${POSTGRES_DB:-cms}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dev-payload-secret-change-in-production}
 
       NODE_ENV: production

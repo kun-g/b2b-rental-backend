@@ -32,7 +32,8 @@
       "Bash(docker restart:*)",
       "Bash(docker ps:*)",
       "Bash(curl:*)",
-      "Bash(docker network:*)"
+      "Bash(docker network:*)",
+      "Bash(xargs docker inspect:*)"
     ],
     "deny": [],
     "ask": []
