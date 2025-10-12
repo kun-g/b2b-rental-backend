@@ -40,6 +40,9 @@ FROM base AS runner
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Enable pnpm
+RUN corepack enable pnpm
+
 # Create user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
