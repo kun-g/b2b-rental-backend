@@ -7,14 +7,10 @@ services:
       dockerfile: Dockerfile
       target: seeder
     environment:
-      DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@rent-postgres:5432/${POSTGRES_DB:-cms}
+      DATABASE_URI: ${DATABASE_URI:-postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms}
       NODE_ENV: development
     networks:
-      - rent-backend-network
       - dokploy-network
-    depends_on:
-      postgres:
-        condition: service_healthy
     restart: "no"
 
   cms:
@@ -43,6 +39,8 @@ services:
 networks:
   rent-backend-network:
     driver: bridge
+  dokploy-network:
+    external: true
 
 volumes:
   postgres-data:

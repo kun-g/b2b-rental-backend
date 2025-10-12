@@ -37,7 +37,9 @@
       "Bash(PGPASSWORD=goodpassword psql:*)",
       "Bash(DATABASE_URI=\"postgresql://postgres:goodpassword@23.249.26.170:34822/cms\" NODE_ENV=development pnpm seed)",
       "Bash(DATABASE_URI=\"postgresql://postgres:goodpassword@23.249.26.170:34822/cms?sslmode=disable\" NODE_ENV=development pnpm seed)",
-      "Bash(docker port:*)"
+      "Bash(docker port:*)",
+      "Bash(nc:*)",
+      "Bash(ip route:*)"
     ],
     "deny": [],
     "ask": []
