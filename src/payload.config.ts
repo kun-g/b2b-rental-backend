@@ -50,7 +50,8 @@ function getDatabaseAdapter() {
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
-    push: process.env.NODE_ENV !== 'production', // 生产环境关闭自动同步
+    // 允许通过 DATABASE_PUSH 环境变量控制是否自动同步
+    push: process.env.DATABASE_PUSH === 'true' || process.env.NODE_ENV !== 'production',
   })
 }
 

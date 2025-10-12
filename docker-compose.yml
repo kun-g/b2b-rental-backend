@@ -34,7 +34,7 @@ services:
     environment:
       DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@rent-postgres:5432/${POSTGRES_DB:-cms}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dev-payload-secret-change-in-production}
-
+      DATABASE_PUSH: ${DATABASE_PUSH:-false}
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
     ports:
