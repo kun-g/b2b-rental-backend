@@ -23,7 +23,16 @@
       "Bash(PORT=3001 NODE_ENV=production timeout 10 node server.js)",
       "Bash(export PORT=3001)",
       "Bash(export NODE_ENV=production)",
-      "Bash(timeout 10 node:*)"
+      "Bash(timeout 10 node:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker exec:*)",
+      "Bash(python3:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker ps:*)",
+      "Bash(curl:*)",
+      "Bash(docker network:*)"
     ],
     "deny": [],
     "ask": []
