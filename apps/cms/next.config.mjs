@@ -18,4 +18,10 @@ const nextConfig = {
   },
 }
 
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+// Apply withPayload wrapper and ensure standalone output is set
+const config = withPayload(nextConfig, { devBundleServerPackages: false })
+
+// Ensure standalone output is set after withPayload (prevents override)
+config.output = 'standalone'
+
+export default config

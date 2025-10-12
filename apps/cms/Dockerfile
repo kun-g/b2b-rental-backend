@@ -1,36 +1,42 @@
-# Optimized for pnpm workspace monorepo with Payload CMS
+# Based on official Payload CMS Docker deployment guide
+# Adapted for pnpm workspace monorepo
+# https://payloadcms.com/docs/production/deployment
 
 FROM node:22.17.0-alpine AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
+
+# Install dependencies only when needed
+FROM base AS deps
 RUN corepack enable pnpm
 
-# Install all dependencies for build
-FROM base AS deps
+# Copy workspace files for pnpm monorepo
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/cms/package.json ./apps/cms/package.json
+
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build the application
+# Rebuild the source code only when needed
 FROM base AS builder
+RUN corepack enable pnpm
+WORKDIR /app
+
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/cms/node_modules ./apps/cms/node_modules
 COPY apps/cms ./apps/cms
 
+# Environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_TYPE_CHECK=true
 
+# Build the app
 RUN pnpm --filter=cms run build
 
-# Install production dependencies only
-FROM base AS prod-deps
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY apps/cms/package.json ./apps/cms/package.json
-RUN pnpm install --frozen-lockfile --prod
-
-# Production image - minimal size
+# Production image, copy all the files and run next
 FROM base AS runner
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -38,29 +44,24 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy workspace config
-COPY --from=builder /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/package.json ./
-
-# Copy ONLY production dependencies
-COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=prod-deps --chown=nextjs:nodejs /app/apps/cms/node_modules ./apps/cms/node_modules
-
-# Copy built app and necessary files
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next ./apps/cms/.next
+# Copy public folder
 COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/public ./apps/cms/public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/package.json ./apps/cms/package.json
 
-# Copy runtime source files (Payload CMS needs these)
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/src ./apps/cms/src
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/next.config.mjs ./apps/cms/next.config.mjs
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/payload.config.ts ./apps/cms/payload.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/tsconfig.json ./apps/cms/tsconfig.json
+# Set the correct permission for prerender cache
+RUN mkdir -p apps/cms/.next && \
+    chown nextjs:nodejs apps/cms/.next
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/cms/.next/static ./apps/cms/.next/static
 
 USER nextjs
-WORKDIR /app/apps/cms
 
 EXPOSE 3000
 ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-CMD ["pnpm", "start"]
+# server.js is created by next build from the standalone output
+# In monorepo, it's located at apps/cms/server.js
+CMD ["node", "apps/cms/server.js"]
