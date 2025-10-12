@@ -33,7 +33,11 @@
       "Bash(docker ps:*)",
       "Bash(curl:*)",
       "Bash(docker network:*)",
-      "Bash(xargs docker inspect:*)"
+      "Bash(xargs docker inspect:*)",
+      "Bash(PGPASSWORD=goodpassword psql:*)",
+      "Bash(DATABASE_URI=\"postgresql://postgres:goodpassword@23.249.26.170:34822/cms\" NODE_ENV=development pnpm seed)",
+      "Bash(DATABASE_URI=\"postgresql://postgres:goodpassword@23.249.26.170:34822/cms?sslmode=disable\" NODE_ENV=development pnpm seed)",
+      "Bash(docker port:*)"
     ],
     "deny": [],
     "ask": []

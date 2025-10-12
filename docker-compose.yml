@@ -1,4 +1,21 @@
 services:
+  db-init:
+    profiles:
+      - ${INIT_DB:-never}  # 默认不运行，设置 INIT_DB=init 时运行
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: seeder
+    environment:
+      DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@rent-postgres:5432/${POSTGRES_DB:-cms}
+      NODE_ENV: development
+    networks:
+      - rent-backend-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -35,7 +52,7 @@ services:
       DATABASE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@rent-postgres:5432/${POSTGRES_DB:-cms}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dev-payload-secret-change-in-production}
       DATABASE_PUSH: ${DATABASE_PUSH:-false}
-      NODE_ENV: production
+      NODE_ENV: ${environment:-production}
       NEXT_TELEMETRY_DISABLED: 1
     ports:
       - '${CMS_PORT:-3000}'

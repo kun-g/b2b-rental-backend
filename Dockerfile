@@ -24,6 +24,13 @@ RUN pnpm run build
 # Create public directory if it doesn't exist (Next.js optional)
 RUN mkdir -p /app/public
 
+# Seeder image - for database initialization (with full source code)
+FROM base AS seeder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NODE_ENV=development
+CMD ["pnpm", "seed"]
+
 # Production image - use standalone output
 FROM base AS runner
 
