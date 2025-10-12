@@ -13,6 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **运行时**: Node.js >=18.20.2, pnpm >=9
 - **测试**: Vitest (集成测试), Playwright (E2E测试)
 - **语言**: TypeScript 5.7.3
+- **部署**: Docker (standalone模式) + Dokploy
+- **网络**: dokploy-network (外部网络)
 
 ## 核心命令
 
@@ -76,7 +78,22 @@ pnpm seed --clean
 pnpm seed:clean
 ```
 
-Seed 数据包括：12个用户、3个商户、7个类目、7个SKU、25个设备、6条授信、10个订单等。
+**Seed 数据概览**：
+- **用户** (12个): 包括平台管理员、商户管理员、普通用户等各种角色
+- **商户** (3个): 优租设备、长租科技、租赁之家
+- **类目** (7个): 笔记本电脑、显示器、打印机等
+- **SKU** (7个): MacBook Pro、Dell显示器、HP打印机等
+- **设备** (25个): 各SKU对应的实体设备（带SN号）
+- **授信** (6条): 用户与商户的授信关系
+- **订单** (10个): 涵盖各种状态（新建、已支付、发货中、租赁中等）
+- **邀请码** (3个): 每个商户一个授信邀请码
+
+**重要账号**：
+```
+平台管理员: admin / admin123456
+商户管理员: merchant1 / merchant123
+普通用户: user1 / user123456
+```
 
 ### Docker
 
@@ -186,7 +203,7 @@ tests/
 
 ## 环境变量
 
-创建 `.env` 文件（参考 `test.env`）：
+### 开发环境 (.env)
 
 ```bash
 # 数据库
@@ -200,6 +217,24 @@ SKIP_TYPE_CHECK=true
 
 # 可选：禁用遥测
 NEXT_TELEMETRY_DISABLED=1
+```
+
+### Dokploy 生产环境 (.env.dokploy)
+
+```bash
+# 使用 Dokploy 创建的数据库（注意用户名是 postgress 双s）
+DATABASE_URI=postgresql://postgress:password@rent-database-gvfzwv:5432/cms
+
+# CMS 配置
+CMS_PORT=3000
+PAYLOAD_SECRET=<生成一个安全的密钥>
+PAYLOAD_PUBLIC_SERVER_URL=https://your-domain.com
+
+# 数据库工作站（需要时启用）
+ENABLE_WORKSTATION=tools  # 启用后会运行 cms-db-workstation 容器
+
+# 生产环境不要自动 push schema
+DATABASE_PUSH=false
 ```
 
 ## 开发指南
@@ -231,7 +266,56 @@ NEXT_TELEMETRY_DISABLED=1
 
 ## 常见问题
 
-### 类型检查失败导致构建失败
+### 部署相关问题
+
+#### 问题：relation "users" does not exist
+
+**原因**：Payload CMS 在生产环境不会自动创建数据库 schema。
+
+**解决方案**：
+```bash
+# 启用工作站并初始化数据库
+# 1. 设置 ENABLE_WORKSTATION=tools
+# 2. 重新部署
+# 3. 执行初始化
+docker exec cms-db-workstation pnpm seed
+```
+
+#### 问题：password authentication failed for user "postgres"
+
+**原因**：Dokploy 创建的数据库用户名是 `postgress`（双s），不是 `postgres`。
+
+**解决方案**：
+```bash
+# 检查 DATABASE_URI，确保用户名正确
+postgresql://postgress:password@rent-database-gvfzwv:5432/cms
+#              ^^^^^^^^ 注意是双s
+```
+
+#### 问题：CMS 容器无法连接数据库
+
+**原因**：网络配置问题，容器不在同一网络。
+
+**解决方案**：
+```yaml
+# docker-compose.yml 确保使用 dokploy-network
+networks:
+  dokploy-network:
+    external: true
+```
+
+#### 问题：本地无法连接远程数据库执行 seed
+
+**原因**：数据库未对外暴露端口。
+
+**解决方案**：使用工作站容器执行：
+```bash
+docker exec cms-db-workstation pnpm seed
+```
+
+### 开发相关问题
+
+#### 类型检查失败导致构建失败
 
 ```bash
 # 临时跳过类型检查
@@ -240,24 +324,100 @@ SKIP_TYPE_CHECK=true pnpm build
 
 或在 `.env` 中设置 `SKIP_TYPE_CHECK=true`。
 
-### 数据库连接失败
-
-检查 `DATABASE_URI` 格式：
-```bash
-postgresql://username:password@host:port/database
-```
-
-### 测试环境提示 SQLite 不可用
+#### 测试环境提示 SQLite 不可用
 
 确保在开发环境运行测试（生产构建不包含 SQLite 依赖）。
 
-### 首次访问创建管理员时选错了角色
+### 运维相关问题
+
+#### 首次访问创建管理员时选错了角色
 
 **必须选择 `platform_admin` 角色**，否则无法管理系统。
 
 如果选错，可以：
-1. 直接修改数据库：`UPDATE users SET role = 'platform_admin' WHERE username = 'admin';`
-2. 或运行 `pnpm seed --clean` 重新开始
+```bash
+# 方法1：通过工作站修改
+docker exec cms-db-workstation sh -c 'PGPASSWORD=password psql -h rent-database-gvfzwv -U postgress -d cms -c "UPDATE users SET role = '\''platform_admin'\'' WHERE username = '\''admin'\'';"'
+
+# 方法2：清空重建
+docker exec cms-db-workstation pnpm seed --clean
+```
+
+## 调试技巧
+
+### 容器日志查看
+```bash
+# 查看 CMS 服务日志
+docker logs cms
+
+# 查看工作站日志
+docker logs cms-db-workstation
+
+# 实时跟踪日志
+docker logs -f cms
+```
+
+### 数据库连接测试
+```bash
+# 测试从工作站到数据库的连接
+docker exec cms-db-workstation nc -zv rent-database-gvfzwv 5432
+
+# 查看数据库主机解析
+docker exec cms-db-workstation getent hosts rent-database-gvfzwv
+
+# 检查网络配置
+docker network inspect dokploy-network
+```
+
+### 环境变量检查
+```bash
+# 查看 CMS 容器环境变量
+docker exec cms env | grep -E "DATABASE|PAYLOAD"
+
+# 查看工作站环境变量
+docker exec cms-db-workstation env | grep -E "DATABASE|NODE_ENV"
+```
+
+## 数据库工作站使用
+
+工作站是一个包含完整源码和依赖的容器，用于执行数据库相关操作。
+
+### 启用工作站
+
+```bash
+# 在 .env.dokploy 中设置
+ENABLE_WORKSTATION=tools
+
+# 重新部署后，会创建 cms-db-workstation 容器
+```
+
+### 常用操作
+
+```bash
+# 进入工作站
+docker exec -it cms-db-workstation sh
+
+# 初始化数据库（创建测试数据）
+docker exec cms-db-workstation pnpm seed
+
+# 清空后重建
+docker exec cms-db-workstation pnpm seed --clean
+
+# 仅清空数据
+docker exec cms-db-workstation pnpm seed:clean
+
+# 直接查询数据库
+docker exec cms-db-workstation sh -c 'PGPASSWORD=hHvjxC24 psql -h rent-database-gvfzwv -U postgress -d cms -c "SELECT * FROM users LIMIT 5;"'
+
+# 查看环境变量
+docker exec cms-db-workstation sh -c 'echo $DATABASE_URI'
+```
+
+### 注意事项
+
+- 工作站包含完整源码，仅在需要时启用
+- 完成操作后建议关闭（删除 ENABLE_WORKSTATION）
+- 工作站使用 NODE_ENV=development 运行
 
 ## 相关文档
 
@@ -268,24 +428,84 @@ postgresql://username:password@host:port/database
 - **AUTH_GUIDE.md** - 认证系统和角色权限
 - **CREDIT_INVITATION_FLOW.md** - 授信邀请码业务流程
 - **DATABASE_SETUP.md** - 数据库配置
+- **DATABASE_WORKSTATION.md** - 数据库工作站详细使用指南
 - **USER_PERMISSIONS.md** - 权限矩阵
 
 查看 `TODO.md` 了解待实现功能。
 
 ## 部署注意事项
 
+### 部署架构
+
+```
+┌─────────────────┐
+│   Dokploy平台   │
+└────────┬────────┘
+         │
+    dokploy-network (外部网络)
+         │
+    ┌────┴────────────────────┐
+    │                          │
+┌───┴───┐  ┌──────────┐  ┌────┴─────┐
+│  CMS  │  │ Database │  │Workstation│
+│Service│  │  Service │  │ (可选)   │
+└───────┘  └──────────┘  └──────────┘
+```
+
+- **CMS Service**: 生产服务，使用 standalone 模式（~500MB）
+- **Database Service**: Dokploy 管理的 PostgreSQL (rent-database-gvfzwv)
+- **Workstation**: 数据库管理容器，包含完整源码，用于 seed/clean 操作
+
+### 数据库初始化工作流
+
+#### 首次部署初始化
+
+```bash
+# 1. 在 .env.dokploy 中启用工作站
+ENABLE_WORKSTATION=tools
+
+# 2. 部署应用，等待容器启动
+
+# 3. 执行数据库初始化
+docker exec cms-db-workstation pnpm seed
+
+# 4. 验证初始化成功
+docker exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h rent-database-gvfzwv -U postgress -d cms -c "SELECT COUNT(*) FROM users;"'
+
+# 5. （可选）完成后关闭工作站
+# 删除 ENABLE_WORKSTATION 并重新部署
+```
+
+### Docker 配置要点
+
 1. **Next.js Standalone 模式**
    - `next.config.mjs` 配置了 `output: 'standalone'`
-   - Payload CMS 3.x 对 standalone 模式支持有限，需要复制配置文件到生产镜像
+   - 生产镜像只包含必要文件（~500MB vs 开发 30GB）
+   - Dockerfile 使用多阶段构建
 
-2. **Docker 镜像优化**
-   - 使用多阶段构建，分离生产依赖
-   - 仅复制生产依赖到最终镜像
+2. **多阶段构建**
+   ```dockerfile
+   # runner: 生产服务（精简）
+   FROM base AS runner
+   COPY --from=builder /app/.next/standalone ./
 
-3. **环境变量**
-   - 确保设置 `DATABASE_URI` 和 `PAYLOAD_SECRET`
-   - 生产环境不要设置 `SKIP_TYPE_CHECK=true`
+   # seeder: 工作站（完整源码）
+   FROM base AS seeder
+   COPY . .
+   ENV NODE_ENV=development
+   ```
 
-4. **数据库迁移**
-   - 开发环境 Payload 自动同步 schema（`push: true`）
-   - 生产环境需要手动迁移（`push: false`）
+3. **网络配置**
+   - 必须使用 `dokploy-network`（外部网络）
+   - 不要创建独立网络，否则无法访问 Dokploy 的数据库服务
+   - docker-compose.yml 中声明：
+   ```yaml
+   networks:
+     dokploy-network:
+       external: true
+   ```
+
+4. **数据库 Schema 管理**
+   - 开发环境：Payload 自动同步（`push: true`）
+   - 生产环境：不自动同步（`push: false`）
+   - 生产环境需要通过工作站手动初始化
