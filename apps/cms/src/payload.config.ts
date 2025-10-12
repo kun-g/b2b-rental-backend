@@ -1,5 +1,6 @@
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
@@ -28,6 +29,33 @@ import { useInvitationCode } from './endpoints/useInvitationCode'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+
+/**
+ * 根据环境选择数据库适配器
+ * - 测试环境: SQLite (内存模式，速度快，完全隔离)
+ * - 开发/生产: PostgreSQL (功能完整)
+ */
+function getDatabaseAdapter() {
+  const isTest = process.env.NODE_ENV === 'test'
+
+  if (isTest) {
+    // 测试环境：使用 SQLite 内存数据库
+    return sqliteAdapter({
+      client: {
+        url: 'file::memory:?cache=shared',
+      },
+      push: true, // 自动同步 schema
+    })
+  }
+
+  // 开发/生产环境：使用 PostgreSQL
+  return postgresAdapter({
+    pool: {
+      connectionString: process.env.DATABASE_URI || '',
+    },
+    push: process.env.NODE_ENV !== 'production', // 生产环境关闭自动同步
+  })
+}
 
 export default buildConfig({
   admin: {
@@ -80,12 +108,7 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: postgresAdapter({
-    pool: {
-      connectionString: process.env.DATABASE_URI || '',
-    },
-    push: true, // 开发模式:自动同步表结构,不需要迁移文件
-  }),
+  db: getDatabaseAdapter(),
   sharp,
   plugins: [
     payloadCloudPlugin(),

@@ -10,5 +10,8 @@ export default defineConfig({
     include: ['tests/**/*.spec.ts', 'src/**/*.test.ts'],
     exclude: ['tests/e2e/**', '**/node_modules/**'],
     globals: true,
+    env: {
+      NODE_ENV: 'test', // 使用 SQLite 内存数据库
+    },
   },
 })
