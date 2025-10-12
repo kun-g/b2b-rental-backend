@@ -1,79 +1,67 @@
-# B2B 租赁后端 Monorepo
+# Payload Blank Template
 
-本仓库使用 pnpm 搭配 Turbo 建立 monorepo，包含以下服务：
+This template comes configured with the bare minimum to get started on anything you need.
 
-- **Core**：基于 NestJS 的 HTTP API，提供健康检查、Swagger 文档与配置管理。
-- **CMS**：基于 Payload + Next.js 的内容管理服务，包含最小页面与 Payload 管理后台。
-- **Shared**：共享的 TypeScript 类型与工具。
+## Quick start
 
-## 环境要求
+This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
 
-- Node.js 20+
-- pnpm 8+
-- Docker 与 Docker Compose
+## Quick Start - local setup
 
-## 安装步骤
+To spin up this template locally, follow these steps:
 
-```bash
-pnpm install
-```
+### Clone
 
-复制环境变量样例文件并按需调整：
+After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
 
-```bash
-cp .env.sample .env
-```
+### Development
 
-## 启动全套服务
+1. First [clone the repo](#clone) if you have not done so already
+2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URI` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
 
-1. 启动 PostgreSQL、Core 与 CMS 容器：
+3. `pnpm install && pnpm dev` to install dependencies and start the dev server
+4. open `http://localhost:3000` to open the app in your browser
 
-   ```bash
-   docker compose up -d
-   ```
+That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
 
-2. 在容器运行后开启本地开发模式（Core 与 CMS 同时监听）：
+#### Docker (Optional)
 
-   ```bash
-   pnpm dev
-   ```
+If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
 
-### 服务访问地址
+To do so, follow these steps:
 
-- Core 健康检查：[http://localhost:4001/health](http://localhost:4001/health) → `{ "ok": true }`
-- Core Swagger 文档：[http://localhost:4001/docs](http://localhost:4001/docs)
-- CMS 页面：[http://localhost:4002](http://localhost:4002)
-- Payload 管理后台：[http://localhost:4002/admin](http://localhost:4002/admin)
+- Modify the `MONGODB_URI` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
+- Modify the `docker-compose.yml` file's `MONGODB_URI` to match the above `<dbname>`
+- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
 
-## 常用脚本
+## How it works
 
-| 指令 | 说明 |
-| --- | --- |
-| `pnpm dev` | 通过 Turbo 并行运行 Core（`ts-node-dev`）与 CMS（`payload dev`）。 |
-| `pnpm build` | 构建所有 packages 与 apps。 |
-| `pnpm lint` | 运行 ESLint 检查整个工作区。 |
-| `pnpm format` | 使用 Prettier 格式化整个工作区。 |
-| `pnpm format:check` | 以只读模式执行 Prettier 校验，CI/PR 必须通过。 |
-| `pnpm test:ci` | 运行 `turbo run test` 并将日志输出至 `reports/tests/latest.log`；若暂无测试会记录说明。 |
-| `pnpm quality:verify` | 顺序执行 `lint`、`format:check`、`build`、`test:ci`，用于本地或 CI 质量门禁。 |
-| `pnpm migrate` | 触发 Turbo 在 Core 应用中运行 Prisma 迁移（读取 `apps/core/prisma/migrations`，默认等待锁 60 秒）。 |
-| `pnpm seed` | 在迁移完成后执行 Prisma 数据种子，写入演示租户/商户/SKU 等数据。 |
+The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
 
-> 提示：迁移脚本已默认设置 `PRISMA_MIGRATION_ENGINE_ADVISORY_LOCK_TIMEOUT=60000`，如需更长等待时长，可在执行前自行覆盖该环境变量。
+### Collections
 
-### CMS 多租户与草稿
+See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
 
-- Payload 与 Core 共用同一 Postgres，新增 `tenants` 集合用于维护租户元数据，`tenant-pages` 集合支持草稿版本与租户隔离。
-- 用户集合新增三种角色：
-  - `superAdmin`：拥有全局权限，可维护所有租户与用户；
-  - `tenantAdmin`：管理本租户成员与内容；
-  - `tenantEditor`：仅能在本租户范围内协作内容。
-- 非超级管理员创建/编辑内容时会自动关联其所属租户，草稿在 `tenant-pages` 中以 Payload 原生版本功能保存，可在发布前多次迭代。
-- 如需访问 Payload Admin，请使用 `pnpm --filter @b2b-rental/cms dev` 启动 CMS，然后访问 [http://localhost:4002/admin](http://localhost:4002/admin) 登录相应角色账号。
+- #### Users (Authentication)
 
-## 常见问题排查
+  Users are auth-enabled collections that have access to the admin panel.
 
-- **端口已被占用**：启动前确认 `4001`、`4002` 与 `5432` 端口空闲。
-- **数据库连接失败**：确认 `.env` 中的 `DATABASE_URL` 与实际运行的 PostgreSQL 一致并可访问。
-- **Payload Admin 报错 schema 相关问题**：修改 CMS Schema 后执行 `pnpm build` 以重新生成类型。
-- **Docker 构建缓存异常**：使用 `docker compose build --no-cache` 重新构建镜像。
+  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+
+- #### Media
+
+  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
+
+### Docker
+
+Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
+
+1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
+1. Next run `docker-compose up`
+1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
+
+That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
+
+## Questions
+
+If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).

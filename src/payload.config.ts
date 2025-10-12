@@ -1,6 +1,5 @@
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
@@ -32,20 +31,18 @@ const dirname = path.dirname(filename)
 
 /**
  * 根据环境选择数据库适配器
- * - 测试环境: SQLite (内存模式，速度快，完全隔离)
+ * - 测试环境: SQLite (内存模式，速度快，完全隔离) - 需在开发环境运行
  * - 开发/生产: PostgreSQL (功能完整)
  */
 function getDatabaseAdapter() {
   const isTest = process.env.NODE_ENV === 'test'
 
   if (isTest) {
-    // 测试环境：使用 SQLite 内存数据库
-    return sqliteAdapter({
-      client: {
-        url: 'file::memory:?cache=shared',
-      },
-      push: true, // 自动同步 schema
-    })
+    // 测试环境需要 SQLite，在生产构建中不可用
+    // 请在开发环境运行测试
+    throw new Error(
+      'SQLite adapter is not available in production build. Please run tests in development environment.'
+    )
   }
 
   // 开发/生产环境：使用 PostgreSQL
