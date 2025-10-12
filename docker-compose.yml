@@ -5,9 +5,11 @@ services:
       dockerfile: Dockerfile
       target: seeder
     container_name: cms-db-workstation
+    working_dir: /app
     environment:
       DATABASE_URI: ${DATABASE_URI:-postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms}
       NODE_ENV: development
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
     networks:
       - dokploy-network
     restart: unless-stopped  # 保持运行
