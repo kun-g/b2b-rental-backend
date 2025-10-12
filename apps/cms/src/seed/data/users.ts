@@ -5,9 +5,9 @@
 export const usersData = {
   // ===== 平台端 =====
   platformAdmin: {
-    username: 'admin',
+    username: 'kun',
     email: 'admin@platform.com',
-    password: 'Admin123!',
+    password: '123',
     role: 'platform_admin' as const,
   },
 
