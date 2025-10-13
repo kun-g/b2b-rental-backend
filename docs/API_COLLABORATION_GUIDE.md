@@ -99,32 +99,6 @@ curl -X GET http://localhost:3000/api/orders \
   -H "Authorization: JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
-### 2. API Key 认证（需要自定义实现）
-
-如果需要为第三方系统提供长期有效的 API Key，可以：
-
-1. 创建专门的 API 用户
-2. 使用自定义 Header 验证
-3. 实现 API Key 管理界面
-
-```typescript
-// src/middleware/apiKeyAuth.ts
-export const apiKeyAuth = async (req, res, next) => {
-  const apiKey = req.headers['x-api-key']
-
-  if (apiKey) {
-    // 验证 API Key
-    const user = await validateApiKey(apiKey)
-    if (user) {
-      req.user = user
-      return next()
-    }
-  }
-
-  // 继续标准认证流程
-  next()
-}
-```
 
 ## API 使用示例
 
@@ -485,7 +459,6 @@ const rateLimitConfig = {
 
 - 不要在响应中返回密码字段
 - 使用 HTTPS 传输
-- 定期轮换 API Keys
 - 记录审计日志
 
 ## 常见问题

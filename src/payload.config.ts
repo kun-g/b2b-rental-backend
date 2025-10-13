@@ -70,6 +70,26 @@ export default buildConfig({
       },
     },
   },
+  cors: [
+    // 开发环境
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    // 生产环境（从环境变量读取）
+    process.env.PAYLOAD_PUBLIC_SERVER_URL || '',
+    // 如果需要允许其他域名，可以通过 CORS_ALLOWED_ORIGINS 环境变量指定（逗号分隔）
+    ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : []),
+  ].filter(Boolean),
+  csrf: [
+    // 同样的源列表
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    process.env.PAYLOAD_PUBLIC_SERVER_URL || '',
+    ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : []),
+  ].filter(Boolean),
   collections: [
     // 账号管理
     Users,

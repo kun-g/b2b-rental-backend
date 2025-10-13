@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
  * 健康检查端点
  * 用于 Docker healthcheck 和负载均衡器
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // 基础健康检查 - 应用运行中
     const healthData = {
