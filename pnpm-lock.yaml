@@ -48,6 +48,9 @@ importers:
         specifier: 0.34.2
         version: 0.34.2
     devDependencies:
+      '@eslint/eslintrc':
+        specifier: ^3.3.1
+        version: 3.3.1
       '@payloadcms/db-sqlite':
         specifier: 3.59.1
         version: 3.59.1(@types/pg@8.10.2)(better-sqlite3@12.4.1)(payload@3.59.1(graphql@16.11.0)(typescript@5.7.3))(pg@8.16.3)

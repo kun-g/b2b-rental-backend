@@ -215,6 +215,7 @@ async function seed() {
         name: '全国包邮计划',
         version: 1,
         is_default: true,
+        status: 'active',
         default_fee: 15,
         region_rules: [
           { region_code_path: '440300', region_name: '深圳市', fee: 5 },
@@ -236,6 +237,7 @@ async function seed() {
         name: '标准运费',
         version: 1,
         is_default: true,
+        status: 'active',
         default_fee: 20,
         region_rules: [
           { region_code_path: '310000', region_name: '上海市', fee: 10 },
@@ -367,6 +369,11 @@ async function seed() {
       else if (key.startsWith('backpack60L')) skuId = backpack60L.id
       else if (key.startsWith('switchOLED')) skuId = switchOLED.id
 
+      if (!skuId) {
+        console.warn(`   ⚠️  警告: 无法为设备 ${key} 找到对应的 SKU，跳过`)
+        continue
+      }
+
       await payload.create({
         collection: 'devices',
         data: {
@@ -383,37 +390,37 @@ async function seed() {
       collection: 'users',
       data: usersData.alice,
     })
-    console.log(`   ✓ ${alice.name} (${alice.phone})`)
+    console.log(`   ✓ ${alice.username} (${alice.phone})`)
 
     const bob = await payload.create({
       collection: 'users',
       data: usersData.bob,
     })
-    console.log(`   ✓ ${bob.name} (${bob.phone})`)
+    console.log(`   ✓ ${bob.username} (${bob.phone})`)
 
     const charlie = await payload.create({
       collection: 'users',
       data: usersData.charlie,
     })
-    console.log(`   ✓ ${charlie.name} (${charlie.phone})`)
+    console.log(`   ✓ ${charlie.username} (${charlie.phone})`)
 
     const david = await payload.create({
       collection: 'users',
       data: usersData.david,
     })
-    console.log(`   ✓ ${david.name} (${david.phone}) - 无授信`)
+    console.log(`   ✓ ${david.username} (${david.phone}) - 无授信`)
 
     const eve = await payload.create({
       collection: 'users',
       data: usersData.eve,
     })
-    console.log(`   ✓ ${eve.name} (${eve.phone})`)
+    console.log(`   ✓ ${eve.username} (${eve.phone})`)
 
     const frank = await payload.create({
       collection: 'users',
       data: usersData.frank,
     })
-    console.log(`   ✓ ${frank.name} (${frank.phone}) - KYC待认证`)
+    console.log(`   ✓ ${frank.username} (${frank.phone}) - KYC待认证`)
 
     // 9. 创建授信关系
     console.log('\n💳 创建授信关系...')
@@ -425,9 +432,10 @@ async function seed() {
         credit_limit: 10000,
         used_credit: 5000,
         status: 'active',
+        source: 'manual',
       },
     })
-    console.log(`   ✓ ${alice.name} × ${merchantA.name}: 10000元 (已用5000)`)
+    console.log(`   ✓ ${alice.username} × ${merchantA.name}: 10000元 (已用5000)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -437,9 +445,10 @@ async function seed() {
         credit_limit: 8000,
         used_credit: 0,
         status: 'active',
+        source: 'manual',
       },
     })
-    console.log(`   ✓ ${bob.name} × ${merchantA.name}: 8000元`)
+    console.log(`   ✓ ${bob.username} × ${merchantA.name}: 8000元`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -449,9 +458,10 @@ async function seed() {
         credit_limit: 6000,
         used_credit: 1500,
         status: 'active',
+        source: 'manual',
       },
     })
-    console.log(`   ✓ ${bob.name} × ${merchantB.name}: 6000元 (已用1500)`)
+    console.log(`   ✓ ${bob.username} × ${merchantB.name}: 6000元 (已用1500)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -461,9 +471,10 @@ async function seed() {
         credit_limit: 5000,
         used_credit: 0,
         status: 'disabled',
+        source: 'manual',
       },
     })
-    console.log(`   ✓ ${charlie.name} × ${merchantB.name}: 5000元 (已冻结)`)
+    console.log(`   ✓ ${charlie.username} × ${merchantB.name}: 5000元 (已冻结)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -473,9 +484,10 @@ async function seed() {
         credit_limit: 5000,
         used_credit: 4900,
         status: 'active',
+        source: 'manual',
       },
     })
-    console.log(`   ✓ ${eve.name} × ${merchantA.name}: 5000元 (已用4900，额度不足)`)
+    console.log(`   ✓ ${eve.username} × ${merchantA.name}: 5000元 (已用4900，额度不足)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -485,9 +497,10 @@ async function seed() {
         credit_limit: 3000,
         used_credit: 0,
         status: 'active',
+        source: 'manual',
       },
     })
-    console.log(`   ✓ ${frank.name} × ${merchantA.name}: 3000元`)
+    console.log(`   ✓ ${frank.username} × ${merchantA.name}: 3000元`)
 
     // 10. 创建授信邀请码
     console.log('\n🎟️  创建授信邀请码...')
@@ -496,33 +509,30 @@ async function seed() {
       data: {
         ...invitationsData.invite2024A,
         merchant: merchantA.id,
-        creator: merchantAdminA.id,
         expires_at: invitationsData.invite2024A.expires_at(),
       },
     })
-    console.log(`   ✓ ${invite2024A.code} → ${merchantA.name}`)
+    console.log(`   ✓ ${invite2024A.invitation_code} → ${merchantA.name}`)
 
     const invite2024B = await payload.create({
       collection: 'credit-invitations',
       data: {
         ...invitationsData.invite2024B,
         merchant: merchantB.id,
-        creator: merchantAdminB.id,
         expires_at: invitationsData.invite2024B.expires_at(),
       },
     })
-    console.log(`   ✓ ${invite2024B.code} → ${merchantB.name}`)
+    console.log(`   ✓ ${invite2024B.invitation_code} → ${merchantB.name}`)
 
     const expired2023 = await payload.create({
       collection: 'credit-invitations',
       data: {
         ...invitationsData.expired2023,
         merchant: merchantA.id,
-        creator: merchantAdminA.id,
         expires_at: invitationsData.expired2023.expires_at(),
       },
     })
-    console.log(`   ✓ ${expired2023.code} (已过期)`)
+    console.log(`   ✓ ${expired2023.invitation_code} (已过期)`)
 
     // 创建邀请码使用记录
     await payload.create({
@@ -531,7 +541,7 @@ async function seed() {
         ...invitationUsagesData.usage1,
         invitation: invite2024A.id,
         merchant: merchantA.id,
-        invitation_code: invitationsData.invite2024A.code,
+        invitation_code: invitationsData.invite2024A.invitation_code,
         user: alice.id,
       },
     })
@@ -542,7 +552,7 @@ async function seed() {
         ...invitationUsagesData.usage2,
         invitation: invite2024A.id,
         merchant: merchantA.id,
-        invitation_code: invitationsData.invite2024A.code,
+        invitation_code: invitationsData.invite2024A.invitation_code,
         user: frank.id,
       },
     })
@@ -553,7 +563,7 @@ async function seed() {
         ...invitationUsagesData.usage3,
         invitation: invite2024B.id,
         merchant: merchantB.id,
-        invitation_code: invitationsData.invite2024B.code,
+        invitation_code: invitationsData.invite2024B.invitation_code,
         user: bob.id,
       },
     })

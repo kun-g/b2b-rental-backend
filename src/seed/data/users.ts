@@ -9,6 +9,7 @@ export const usersData = {
     email: 'admin@platform.com',
     password: '123',
     role: 'platform_admin' as const,
+    status: 'active' as const,
   },
 
   platformOperator: {
@@ -16,6 +17,7 @@ export const usersData = {
     email: 'operator@platform.com',
     password: 'Operator123!',
     role: 'platform_operator' as const,
+    status: 'active' as const,
   },
 
   platformSupport: {
@@ -23,6 +25,7 @@ export const usersData = {
     email: 'support@platform.com',
     password: 'Support123!',
     role: 'platform_support' as const,
+    status: 'active' as const,
   },
 
   // ===== 租方端 =====
@@ -31,6 +34,7 @@ export const usersData = {
     password: 'Alice123!',
     phone: '13800138001',
     role: 'customer' as const,
+    status: 'active' as const,
     kyc_status: 'verified' as const,
     addresses: [
       {
@@ -57,6 +61,7 @@ export const usersData = {
     password: 'Bob123!',
     phone: '13800138002',
     role: 'customer' as const,
+    status: 'active' as const,
     kyc_status: 'verified' as const,
     addresses: [
       {
@@ -75,6 +80,7 @@ export const usersData = {
     password: 'Charlie123!',
     phone: '13800138003',
     role: 'customer' as const,
+    status: 'active' as const,
     kyc_status: 'verified' as const,
     addresses: [
       {
@@ -93,6 +99,7 @@ export const usersData = {
     password: 'David123!',
     phone: '13800138004',
     role: 'customer' as const,
+    status: 'active' as const,
     kyc_status: 'verified' as const,
     addresses: [
       {
@@ -111,6 +118,7 @@ export const usersData = {
     password: 'Eve123!',
     phone: '13800138005',
     role: 'customer' as const,
+    status: 'active' as const,
     kyc_status: 'verified' as const,
     addresses: [
       {
@@ -129,6 +137,7 @@ export const usersData = {
     password: 'Frank123!',
     phone: '13800138006',
     role: 'customer' as const,
+    status: 'active' as const,
     kyc_status: 'pending' as const, // 未认证
     addresses: [
       {

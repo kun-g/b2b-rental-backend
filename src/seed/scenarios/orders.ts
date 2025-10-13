@@ -33,7 +33,7 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3天后
       rent_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10天后
       daily_fee_snapshot: 50,
-      shipping_fee_snapshot: 5,
+      shipping_fee: 5,
       credit_hold_amount: 5000,
       total_amount: 355, // 50*7 + 5
       shipping_address: {
@@ -45,7 +45,6 @@ export async function createOrderScenarios(
         contact_name: 'Alice',
         contact_phone: '13800138001',
       },
-      address_change_count: 0,
     },
   })
   console.log(`   ✓ 订单1: NEW状态 (未支付)`)
@@ -62,7 +61,7 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee_snapshot: 10,
+      shipping_fee: 10,
       credit_hold_amount: 5000,
       total_amount: 360, // 50*7 + 10
       shipping_address: {
@@ -74,7 +73,6 @@ export async function createOrderScenarios(
         contact_name: 'Bob',
         contact_phone: '13800138002',
       },
-      address_change_count: 0,
     },
   })
 
@@ -106,7 +104,7 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee_snapshot: 15, // 改址后的运费
+      shipping_fee: 15, // 改址后的运费
       credit_hold_amount: 1500,
       total_amount: 185, // 25*7 + 15 (原始) + 5 (改址补差)
       shipping_address: {
@@ -118,7 +116,6 @@ export async function createOrderScenarios(
         contact_name: 'Bob',
         contact_phone: '13800138002',
       },
-      address_change_count: 1,
     },
   })
 
@@ -161,7 +158,7 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee_snapshot: 12, // 最终运费
+      shipping_fee: 12, // 最终运费
       credit_hold_amount: 5000,
       total_amount: 362, // 50*7 + 12
       shipping_address: {
@@ -173,7 +170,6 @@ export async function createOrderScenarios(
         contact_name: 'Alice',
         contact_phone: '13800138001',
       },
-      address_change_count: 2, // 已改2次，不能再改
     },
   })
 
@@ -206,7 +202,7 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 发货次日开始计费
       daily_fee_snapshot: 50,
-      shipping_fee_snapshot: 10,
+      shipping_fee: 10,
       credit_hold_amount: 5000,
       total_amount: 360,
       shipping_address: {
@@ -218,7 +214,6 @@ export async function createOrderScenarios(
         contact_name: 'Bob',
         contact_phone: '13800138002',
       },
-      address_change_count: 0,
     },
   })
 
@@ -247,13 +242,11 @@ export async function createOrderScenarios(
       tracking_events: [
         {
           time: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          status: '已发货',
-          desc: '快递员已揽件',
+          desc: '已发货 - 快递员已揽件',
         },
         {
           time: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          status: '运输中',
-          desc: '快件已到达上海转运中心',
+          desc: '运输中 - 快件已到达上海转运中心',
         },
       ],
     },
@@ -274,7 +267,7 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10天后
       actual_start_date: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee_snapshot: 20,
+      shipping_fee: 20,
       credit_hold_amount: 1500,
       total_amount: 770, // 25*30 + 20
       shipping_address: {
@@ -286,7 +279,6 @@ export async function createOrderScenarios(
         contact_name: 'Bob',
         contact_phone: '13800138002',
       },
-      address_change_count: 0,
     },
   })
 
@@ -331,7 +323,7 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee_snapshot: 5,
+      shipping_fee: 5,
       credit_hold_amount: 5000,
       total_amount: 705, // 50*14 + 5
       shipping_address: {
@@ -343,7 +335,6 @@ export async function createOrderScenarios(
         contact_name: 'Alice',
         contact_phone: '13800138001',
       },
-      address_change_count: 0,
     },
   })
 
@@ -389,7 +380,7 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() - 34 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee_snapshot: 20,
+      shipping_fee: 20,
       credit_hold_amount: 1500,
       total_amount: 195, // 25*7 + 20
       shipping_address: {
@@ -401,7 +392,6 @@ export async function createOrderScenarios(
         contact_name: 'Bob',
         contact_phone: '13800138002',
       },
-      address_change_count: 0,
     },
   })
 
@@ -448,7 +438,7 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() - 53 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() - 59 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee_snapshot: 5,
+      shipping_fee: 5,
       credit_hold_amount: 0, // 已释放
       total_amount: 455, // 50*7 + 5 + 100(逾期)
       shipping_address: {
@@ -460,7 +450,6 @@ export async function createOrderScenarios(
         contact_name: 'Alice',
         contact_phone: '13800138001',
       },
-      address_change_count: 0,
     },
   })
 
@@ -539,7 +528,7 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee_snapshot: 20,
+      shipping_fee: 20,
       credit_hold_amount: 0, // 已释放
       total_amount: 0, // 已退款
       shipping_address: {
@@ -551,9 +540,6 @@ export async function createOrderScenarios(
         contact_name: 'Bob',
         contact_phone: '13800138002',
       },
-      address_change_count: 0,
-      canceled_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      cancel_reason: '行程取消',
     },
   })
 
@@ -568,7 +554,7 @@ export async function createOrderScenarios(
       status: 'refunded',
       channel: 'alipay',
       paid_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-      refunded_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      refund_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     },
   })
   console.log(`   ✓ 订单10: CANCELED状态 (已取消)`)
