@@ -25,6 +25,7 @@ services:
       DATABASE_PUSH: ${DATABASE_PUSH:-false}
       NODE_ENV: ${environment:-production}
       NEXT_TELEMETRY_DISABLED: 1
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     ports:
       - '${CMS_PORT:-3000}'
     networks:

@@ -4,6 +4,7 @@
  */
 
 import type { Payload } from 'payload'
+import type { User, Merchant, MerchantSKU, Device } from '@/payload-types'
 
 /**
  * 创建订单相关的所有数据
@@ -11,10 +12,10 @@ import type { Payload } from 'payload'
 export async function createOrderScenarios(
   payload: Payload,
   context: {
-    users: { alice: any; bob: any; charlie: any }
-    merchants: { merchantA: any; merchantB: any }
-    skus: { djiMini3: any; tent2Person: any }
-    devices: { djiMini3_003: any; tent2Person_003: any; sonyA7M4_001: any }
+    users: { alice: User; bob: User; charlie: User }
+    merchants: { merchantA: Merchant; merchantB: Merchant }
+    skus: { djiMini3: MerchantSKU; tent2Person: MerchantSKU }
+    devices: { djiMini3_003: Device; tent2Person_003: Device; sonyA7M4_001: Device }
   },
 ) {
   const { users, merchants, skus, devices } = context

@@ -40,7 +40,8 @@
       "Bash(docker port:*)",
       "Bash(nc:*)",
       "Bash(ip route:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(pnpm generate:types:*)"
     ],
     "deny": [],
     "ask": []

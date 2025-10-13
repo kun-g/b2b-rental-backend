@@ -12,7 +12,7 @@
  */
 
 import 'dotenv/config'
-import { getPayload } from 'payload'
+import { getPayload, type Payload } from 'payload'
 import config from '../payload.config'
 import { usersData } from './data/users'
 import { categoriesData } from './data/categories'
@@ -652,7 +652,7 @@ async function seed() {
 /**
  * 清空数据库
  */
-async function cleanDatabase(payload: any) {
+async function cleanDatabase(payload: Payload) {
   const collections = [
     'audit-logs',
     'statements',
@@ -689,10 +689,11 @@ async function cleanDatabase(payload: any) {
       if (result.docs.length > 0) {
         console.log(`   清理 ${collection}: ${result.docs.length} 条`)
       }
-    } catch (err: any) {
+    } catch (err) {
       // 忽略错误（可能是集合不存在）
-      if (!err.message?.includes('not found')) {
-        console.warn(`   警告: 清理 ${collection} 失败 -`, err.message)
+      const error = err as Error
+      if (!error.message?.includes('not found')) {
+        console.warn(`   警告: 清理 ${collection} 失败 -`, error.message)
       }
     }
   }

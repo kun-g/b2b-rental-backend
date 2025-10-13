@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import type { ShippingTemplate } from '@/payload-types'
 import { calculateShippingFee } from '../utils/calculateShipping'
 
 /**
@@ -14,7 +15,7 @@ export const Orders: CollectionConfig = {
     group: '订单管理',
   },
   access: {
-    read: ({ req: { user } }): any => {
+    read: (({ req: { user } }) => {
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
@@ -35,12 +36,12 @@ export const Orders: CollectionConfig = {
         }
       }
       return false
-    },
+    }),
     create: ({ req: { user } }) => {
       // 只有用户可以创建订单
       return user?.role === 'customer'
     },
-    update: ({ req: { user } }): any => {
+    update: (({ req: { user } }) => {
       // 用户、商户、平台都可以更新订单（不同状态不同权限）
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
@@ -62,7 +63,7 @@ export const Orders: CollectionConfig = {
         }
       }
       return false
-    },
+    }),
     delete: ({ req: { user } }) => {
       // 只有平台管理员可以删除订单
       return user?.role === 'platform_admin'
@@ -458,7 +459,7 @@ export const Orders: CollectionConfig = {
                 })
 
                 if (shippingTemplate) {
-                  const shippingResult = calculateShippingFee(shippingTemplate as any, data.shipping_address)
+                  const shippingResult = calculateShippingFee(shippingTemplate as ShippingTemplate, data.shipping_address)
 
                   // 检查是否为黑名单地区
                   if (shippingResult.isBlacklisted) {

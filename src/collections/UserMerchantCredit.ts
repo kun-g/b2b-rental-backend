@@ -13,7 +13,7 @@ export const UserMerchantCredit: CollectionConfig = {
     group: '授信管理',
   },
   access: {
-    read: ({ req: { user } }): any => {
+    read: (({ req: { user } }) => {
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
@@ -36,11 +36,11 @@ export const UserMerchantCredit: CollectionConfig = {
         }
       }
       return false
-    },
+    }),
     create: ({ req: { user } }) => {
       return user?.role === 'merchant_admin'
     },
-    update: ({ req: { user } }): any => {
+    update: (({ req: { user } }) => {
       if (user?.role === 'platform_admin') {
         return true
       }
@@ -54,8 +54,8 @@ export const UserMerchantCredit: CollectionConfig = {
         }
       }
       return false
-    },
-    delete: ({ req: { user } }): any => {
+    }),
+    delete: (({ req: { user } }) => {
       if (user?.role === 'platform_admin') {
         return true
       }
@@ -69,7 +69,7 @@ export const UserMerchantCredit: CollectionConfig = {
         }
       }
       return false
-    },
+    }),
   },
   fields: [
     {
