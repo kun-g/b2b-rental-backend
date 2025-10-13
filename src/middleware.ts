@@ -73,6 +73,11 @@ function checkOrigin(origin: string | null): boolean {
     return true
   }
 
+  // 匹配 lovableproject.com 所有子域名
+  if (/^https:\/\/.*\.lovableproject\.com$/.test(origin)) {
+    return true
+  }
+
   // 支持自定义通配符域名
   const wildcardDomains = process.env.CORS_WILDCARD_DOMAINS?.split(',').map((d) => d.trim()) || []
   for (const domain of wildcardDomains) {
