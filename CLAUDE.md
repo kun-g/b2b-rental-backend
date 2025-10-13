@@ -230,11 +230,6 @@ CMS_PORT=3000
 PAYLOAD_SECRET=<生成一个安全的密钥>
 PAYLOAD_PUBLIC_SERVER_URL=https://your-domain.com
 
-# 数据库工作站（需要时启用）
-ENABLE_WORKSTATION=tools  # 启用后会运行 cms-db-workstation 容器
-
-# 生产环境不要自动 push schema
-DATABASE_PUSH=false
 ```
 
 ## 开发指南
@@ -267,19 +262,6 @@ DATABASE_PUSH=false
 ## 常见问题
 
 ### 部署相关问题
-
-#### 问题：relation "users" does not exist
-
-**原因**：Payload CMS 在生产环境不会自动创建数据库 schema。
-
-**解决方案**：
-```bash
-# 启用工作站并初始化数据库
-# 1. 设置 ENABLE_WORKSTATION=tools
-# 2. 重新部署
-# 3. 执行初始化
-docker exec cms-db-workstation pnpm seed
-```
 
 #### 问题：password authentication failed for user "postgres"
 
@@ -382,15 +364,6 @@ docker exec cms-db-workstation env | grep -E "DATABASE|NODE_ENV"
 
 工作站是一个包含完整源码和依赖的容器，用于执行数据库相关操作。
 
-### 启用工作站
-
-```bash
-# 在 .env.dokploy 中设置
-ENABLE_WORKSTATION=tools
-
-# 重新部署后，会创建 cms-db-workstation 容器
-```
-
 ### 常用操作
 
 ```bash
@@ -416,7 +389,6 @@ docker exec cms-db-workstation sh -c 'echo $DATABASE_URI'
 ### 注意事项
 
 - 工作站包含完整源码，仅在需要时启用
-- 完成操作后建议关闭（删除 ENABLE_WORKSTATION）
 - 工作站使用 NODE_ENV=development 运行
 
 ## 相关文档
@@ -461,9 +433,6 @@ docker exec cms-db-workstation sh -c 'echo $DATABASE_URI'
 #### 首次部署初始化
 
 ```bash
-# 1. 在 .env.dokploy 中启用工作站
-ENABLE_WORKSTATION=tools
-
 # 2. 部署应用，等待容器启动
 
 # 3. 执行数据库初始化
@@ -472,8 +441,6 @@ docker exec cms-db-workstation pnpm seed
 # 4. 验证初始化成功
 docker exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h rent-database-gvfzwv -U postgress -d cms -c "SELECT COUNT(*) FROM users;"'
 
-# 5. （可选）完成后关闭工作站
-# 删除 ENABLE_WORKSTATION 并重新部署
 ```
 
 ### Docker 配置要点

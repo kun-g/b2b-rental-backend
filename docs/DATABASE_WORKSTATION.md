@@ -4,21 +4,6 @@
 
 `db-workstation` 是一个常驻运行的工具容器，包含完整的项目源码和依赖，用于执行数据库相关操作。
 
-## 启用/停用工作站
-
-### 启用工作站
-
-在 `.env.dokploy` 中设置：
-```bash
-ENABLE_WORKSTATION=tools
-```
-
-然后重新部署，会创建一个名为 `cms-db-workstation` 的容器。
-
-### 停用工作站
-
-注释掉或删除该环境变量，重新部署即可停止容器。
-
 ## 使用方式
 
 ### 1. 进入工作站容器
@@ -82,17 +67,6 @@ echo $NODE_ENV
 
 ## 常见场景
 
-### 场景 1：首次部署，初始化数据库
-
-```bash
-# 1. 设置 ENABLE_WORKSTATION=tools 并部署
-# 2. 部署完成后
-docker exec cms-db-workstation pnpm seed
-
-# 3. 查看日志确认成功
-# 4. 之后可以关闭工作站（删除 ENABLE_WORKSTATION）
-```
-
 ### 场景 2：重置数据库
 
 ```bash
@@ -127,7 +101,6 @@ PGPASSWORD=hHvjxC24 psql -h rent-database-gvfzwv -U postgress -d cms -c "SELECT 
 
 1. **工作站不应长期启用** - 包含完整源码，仅在需要时启用
 2. **生产环境谨慎使用 seed** - seed 脚本有安全检查，但仍需小心
-3. **完成操作后及时关闭** - 通过删除 `ENABLE_WORKSTATION` 环境变量
 
 ## 容器信息
 
