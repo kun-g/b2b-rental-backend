@@ -16,6 +16,7 @@
 - **Merchants** - 商户信息（入驻、审核、资质）
 - **MerchantSKUs** - 商户SKU（商品上架、库存）
 - **Devices** - 设备管理（实体设备，绑定SN）
+- **ReturnInfo** - 归还信息（商品归还的联系人、电话与地址）
 - **ShippingTemplates** - 运费模板（地区定价、不发地区）
 
 ### 4. 授信管理 (1个)
@@ -123,7 +124,6 @@
 - `daily_fee` - 日租金
 - `device_value` - 设备价值（授信参考）
 - `inventory_qty` - 库存数量（可租数量）
-- `shipping_template` - 运费模板
 - `is_listed` - 是否上架
 - `listing_status` - 上架状态（draft/pending/approved/rejected）
 
@@ -219,7 +219,9 @@ NEW → PAID → TO_SHIP → SHIPPED → IN_RENT → RETURNING → RETURNED → 
 ```
 
 **关键字段**:
-- `order_no` - 订单编号（自动生成）
+- `order_no` - 租赁订单编号（自动生成）
+- `pay_no` - 系统内的支付订单编号
+- `out_pay_no` - 支付渠道方订单编号
 - `user` - 下单用户
 - `merchant` - 商户
 - `merchant_sku` - 租赁SKU
@@ -232,6 +234,8 @@ NEW → PAID → TO_SHIP → SHIPPED → IN_RENT → RETURNING → RETURNED → 
 - `credit_hold_amount` - 授信冻结金额（按设备价值）
 - `shipping_address` - 收货地址
 - `address_change_count` - 改址次数（≤2次）
+- `shipping_no` - 发货物流单号
+- `return_no` - 归还物流单号
 
 **状态说明**:
 - `NEW`: 新订单（未支付）
