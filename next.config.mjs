@@ -16,6 +16,7 @@ const nextConfig = {
 
     return webpackConfig
   },
+  // CORS 现在由 src/middleware.ts 处理
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

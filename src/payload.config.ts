@@ -70,78 +70,8 @@ export default buildConfig({
       },
     },
   },
-  cors: (req) => {
-    const origin = req.headers.origin || req.headers.referer
-
-    // 静态允许的域名列表
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      process.env.PAYLOAD_PUBLIC_SERVER_URL || '',
-      ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : []),
-    ].filter(Boolean)
-
-    // 检查是否在静态列表中
-    if (origin && allowedOrigins.includes(origin)) {
-      return true
-    }
-
-    // 动态匹配 lovable.app 的所有子域名
-    if (origin && /^https:\/\/.*\.lovable\.app$/.test(origin)) {
-      return true
-    }
-
-    // 支持自定义的通配符域名匹配（通过环境变量 CORS_WILDCARD_DOMAINS，格式：*.example.com,*.test.com）
-    const wildcardDomains = process.env.CORS_WILDCARD_DOMAINS?.split(',').map(d => d.trim()) || []
-    for (const domain of wildcardDomains) {
-      if (domain.startsWith('*.')) {
-        const baseDomain = domain.slice(2) // 去掉 *.
-        const regex = new RegExp(`^https?://.*\\.${baseDomain.replace(/\./g, '\\.')}$`)
-        if (origin && regex.test(origin)) {
-          return true
-        }
-      }
-    }
-
-    return false
-  },
-  csrf: (req) => {
-    const origin = req.headers.origin || req.headers.referer
-
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      process.env.PAYLOAD_PUBLIC_SERVER_URL || '',
-      ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()) : []),
-    ].filter(Boolean)
-
-    if (origin && allowedOrigins.includes(origin)) {
-      return true
-    }
-
-    // 同样支持 lovable.app 子域名
-    if (origin && /^https:\/\/.*\.lovable\.app$/.test(origin)) {
-      return true
-    }
-
-    // 支持自定义通配符域名
-    const wildcardDomains = process.env.CORS_WILDCARD_DOMAINS?.split(',').map(d => d.trim()) || []
-    for (const domain of wildcardDomains) {
-      if (domain.startsWith('*.')) {
-        const baseDomain = domain.slice(2)
-        const regex = new RegExp(`^https?://.*\\.${baseDomain.replace(/\./g, '\\.')}$`)
-        if (origin && regex.test(origin)) {
-          return true
-        }
-      }
-    }
-
-    return false
-  },
+  // CORS 在 Payload 3.x 中由 Next.js middleware 处理（见 src/middleware.ts）
+  // Payload 3.x 运行在 Next.js 之上，这里的 cors/csrf 配置不会生效
   collections: [
     // 账号管理
     Users,
