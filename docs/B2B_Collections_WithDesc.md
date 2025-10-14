@@ -6,7 +6,8 @@
 https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 	- 删除了类目管理
 	- 更新了字段命名以及相关内容关联的主键
-
+ 	- user增加account(账号类型)，订单管理增加logistics_id（租赁平台的物流ID）
+  	- Logistics增加logistics_type区分是发货还是归还
 ---
 ## 总览
 
@@ -52,6 +53,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | phone | 手机号 |
 | email | 邮箱 |
 | user_name| 用户名 |
+| account| 账号类型（merchant、customer、platform） |
 | role | 角色（customer / merchant_member / merchant_admin / platform_operator / platform_admin / platform_support） |
 | merchant | 所属商户（商户角色必填） |
 | last_login_at | 最近登录时间 |
@@ -142,8 +144,9 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | 字段名 | 中文说明 |
 |--------|-----------|
 | order_no | 租赁订单编号（自动生成） |
-| pay_no | 系统内支付单号 |
+| transaction_no | 交易流水号 |
 | out_pay_no | 外部支付单号 |
+| logistics_id | 租赁平台的物流ID |
 | user | 下单用户 |
 | merchant | 商户 |
 | merchant_sku | SKU |
@@ -160,7 +163,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | renter_contact_address | 租赁者收货地址 |
 | return_contact_name | 归还联系人姓名 |
 | return_contact_phone | 归还联系人电话 |
-| return_address | 回收地址 |
+| return_address | 归还地址 |
 | shipping_no | 发货快递单号 |
 | return_no | 归还物流单号 |
 
@@ -171,14 +174,11 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | 字段名 | 中文说明 |
 |--------|-----------|
 | logistics_id | 租赁平台的物流ID |
-| order_no | 租赁订单编号（自动生成） |
-| shipping_carrier | 发货承运商 |
-| ship_no | 发货物流单号 |
+| order_no | 租赁订单编号 |
+| arrier | 物流承运商 |
+| logistics_no | 物流单号 |
 | ship_at | 发货时间 |
-| sign_at | 签收时间 |
-| return_carrier | 归还承运商 |
-| return_ship_no | 归还物流单号 |
-| return_sign_at | 回寄签收时间 |
+| logistics_type| 物流类型（发货，归还） |
 
 ---
 
@@ -193,6 +193,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | amount_shipping | 运费 |
 | amount_total | 总金额 |
 | status | 支付状态（pending / paid / refunded / failed） |
+| creat_at| 创建时间 |
 | paid_at | 支付时间 |
 | channel | 支付渠道（wechat / alipay / bank / other） |
 
