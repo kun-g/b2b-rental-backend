@@ -1,0 +1,223 @@
+import type { AccessArgs, CollectionConfig } from 'payload'
+
+/**
+ * ReturnInfo Collection - 归还信息管理
+ * 对应 PRD 商户管理部分
+ * 每个商户可以设置多个归还地址，用于用户回寄设备
+ */
+export const ReturnInfo: CollectionConfig = {
+  slug: 'return-info',
+  admin: {
+    useAsTitle: 'return_contact_name',
+    defaultColumns: ['merchant', 'return_contact_name', 'return_contact_phone', 'status', 'updatedAt'],
+    group: '商户管理',
+  },
+  access: {
+    read: (({ req: { user } }: AccessArgs<any>) => {
+      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+        return true
+      }
+      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
+        // 商户只能看到自己的归还信息
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
+        return {
+          merchant: {
+            equals: merchantId,
+          },
+        }
+      }
+      // 普通用户在下单时可以查看商户的归还信息
+      if (user?.role === 'customer') {
+        return true
+      }
+      return false
+    }) as any,
+    create: ({ req: { user } }) => {
+      return user?.role === 'merchant_admin'
+    },
+    update: (({ req: { user } }: AccessArgs<any>) => {
+      if (user?.role === 'platform_admin') {
+        return true
+      }
+      if (user?.role === 'merchant_admin') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
+        return {
+          merchant: {
+            equals: merchantId,
+          },
+        }
+      }
+      return false
+    }) as any,
+    delete: (({ req: { user } }: AccessArgs<any>) => {
+      if (user?.role === 'platform_admin') {
+        return true
+      }
+      if (user?.role === 'merchant_admin') {
+        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+        if (!merchantId) return false
+        return {
+          merchant: {
+            equals: merchantId,
+          },
+        }
+      }
+      return false
+    }) as any,
+  },
+  fields: [
+    {
+      name: 'merchant',
+      type: 'relationship',
+      relationTo: 'merchants',
+      required: true,
+      label: '所属商户',
+      admin: {
+        description: '该归还信息所属的商户',
+      },
+    },
+    {
+      name: 'return_contact_name',
+      type: 'text',
+      required: true,
+      label: '回收联系人姓名',
+      admin: {
+        description: '设备回收的联系人姓名',
+      },
+    },
+    {
+      name: 'return_contact_phone',
+      type: 'text',
+      required: true,
+      label: '回收联系人电话',
+      admin: {
+        description: '设备回收的联系人电话（建议格式：1xxxxxxxxxx）',
+      },
+    },
+    {
+      name: 'return_address',
+      type: 'group',
+      label: '回收地址',
+      fields: [
+        {
+          name: 'province',
+          type: 'text',
+          required: true,
+          label: '省份',
+        },
+        {
+          name: 'city',
+          type: 'text',
+          required: true,
+          label: '城市',
+        },
+        {
+          name: 'district',
+          type: 'text',
+          label: '区/县',
+        },
+        {
+          name: 'address',
+          type: 'textarea',
+          required: true,
+          label: '详细地址',
+          admin: {
+            description: '街道、门牌号等详细地址信息',
+          },
+        },
+        {
+          name: 'postal_code',
+          type: 'text',
+          label: '邮政编码',
+        },
+      ],
+    },
+    {
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'active',
+      label: '状态',
+      options: [
+        { label: '启用', value: 'active' },
+        { label: '停用', value: 'inactive' },
+      ],
+      admin: {
+        description: '停用后该地址将不可用于新订单',
+      },
+    },
+    {
+      name: 'is_default',
+      type: 'checkbox',
+      defaultValue: false,
+      label: '是否为默认地址',
+      admin: {
+        description: '每个商户只能有一个默认归还地址',
+      },
+    },
+    {
+      name: 'notes',
+      type: 'textarea',
+      label: '备注',
+      admin: {
+        description: '地址相关的补充说明，如营业时间、特殊要求等',
+      },
+    },
+  ],
+  hooks: {
+    beforeChange: [
+      async ({ data, req, operation, originalDoc }) => {
+        // 如果设置为默认地址，需要将同一商户的其他地址设为非默认
+        if (data.is_default && req.payload) {
+          const merchantId = data.merchant || originalDoc?.merchant
+          if (merchantId) {
+            // 查找同一商户的其他默认地址
+            const existingDefault = await req.payload.find({
+              collection: 'return-info',
+              where: {
+                and: [
+                  {
+                    merchant: {
+                      equals: merchantId,
+                    },
+                  },
+                  {
+                    is_default: {
+                      equals: true,
+                    },
+                  },
+                  ...(operation === 'update' && originalDoc?.id
+                    ? [
+                        {
+                          id: {
+                            not_equals: originalDoc.id,
+                          },
+                        },
+                      ]
+                    : []),
+                ],
+              },
+            })
+
+            // 将其他默认地址更新为非默认
+            if (existingDefault.docs.length > 0) {
+              for (const doc of existingDefault.docs) {
+                await req.payload.update({
+                  collection: 'return-info',
+                  id: doc.id,
+                  data: {
+                    is_default: false,
+                  },
+                })
+              }
+            }
+          }
+        }
+
+        return data
+      },
+    ],
+  },
+}

@@ -258,7 +258,70 @@ async function seed() {
     })
     console.log(`   ✓ ${shippingTemplateB.name} → ${merchantB.name}`)
 
-    // 6. 创建 SKU
+    // 6. 创建归还信息
+    console.log('\n📍 创建归还信息...')
+    const returnInfoA = await payload.create({
+      collection: 'return-info',
+      data: {
+        merchant: merchantA.id,
+        return_contact_name: '张伟',
+        return_contact_phone: '13900001111',
+        return_address: {
+          province: '广东省',
+          city: '深圳市',
+          district: '南山区',
+          address: '科技园南区深圳湾科技生态园10栋B座2001室',
+          postal_code: '518000',
+        },
+        status: 'active',
+        is_default: true,
+        notes: '工作日9:00-18:00接收，请提前联系',
+      },
+    })
+    console.log(`   ✓ ${returnInfoA.return_contact_name} (${returnInfoA.return_address.city}) → ${merchantA.name}`)
+
+    const returnInfoB1 = await payload.create({
+      collection: 'return-info',
+      data: {
+        merchant: merchantB.id,
+        return_contact_name: '李娜',
+        return_contact_phone: '13900002222',
+        return_address: {
+          province: '上海市',
+          city: '上海市',
+          district: '浦东新区',
+          address: '张江高科技园区祖冲之路2277号',
+          postal_code: '201203',
+        },
+        status: 'active',
+        is_default: true,
+        notes: '全天候收货，请联系前台',
+      },
+    })
+    console.log(`   ✓ ${returnInfoB1.return_contact_name} (${returnInfoB1.return_address.city}) → ${merchantB.name}`)
+
+    // 商户B的第二个归还地址（备用）
+    const returnInfoB2 = await payload.create({
+      collection: 'return-info',
+      data: {
+        merchant: merchantB.id,
+        return_contact_name: '王强',
+        return_contact_phone: '13900003333',
+        return_address: {
+          province: '北京市',
+          city: '北京市',
+          district: '海淀区',
+          address: '中关村大街27号中关村大厦18层',
+          postal_code: '100080',
+        },
+        status: 'active',
+        is_default: false,
+        notes: '北京分仓，工作日10:00-17:00',
+      },
+    })
+    console.log(`   ✓ ${returnInfoB2.return_contact_name} (${returnInfoB2.return_address.city}) → ${merchantB.name}`)
+
+    // 7. 创建 SKU
     console.log('\n📱 创建商品 SKU...')
     const djiMini3 = await payload.create({
       collection: 'merchant-skus',
@@ -568,6 +631,7 @@ async function seed() {
     console.log(`   设备: ${Object.keys(devicesData).length} 个`)
     console.log(`   授信: 6 条`)
     console.log(`   运费模板: 2 个`)
+    console.log(`   归还信息: 3 个 (商户A:1个 + 商户B:2个)`)
     console.log(`   订单: 10 个 (覆盖所有状态)`)
     console.log(`   审计日志: 3 条`)
 
@@ -637,6 +701,7 @@ async function cleanDatabase(payload: Payload) {
     'user-merchant-credit',
     'devices',
     'merchant-skus',
+    'return-info',
     'shipping-templates',
     'merchants',
     'categories',

@@ -72,6 +72,7 @@ export interface Config {
     merchants: Merchant;
     'merchant-skus': MerchantSkus;
     devices: Device;
+    'return-info': ReturnInfo;
     'shipping-templates': ShippingTemplate;
     'user-merchant-credit': UserMerchantCredit;
     orders: Order;
@@ -92,6 +93,7 @@ export interface Config {
     merchants: MerchantsSelect<false> | MerchantsSelect<true>;
     'merchant-skus': MerchantSkusSelect<false> | MerchantSkusSelect<true>;
     devices: DevicesSelect<false> | DevicesSelect<true>;
+    'return-info': ReturnInfoSelect<false> | ReturnInfoSelect<true>;
     'shipping-templates': ShippingTemplatesSelect<false> | ShippingTemplatesSelect<true>;
     'user-merchant-credit': UserMerchantCreditSelect<false> | UserMerchantCreditSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -652,6 +654,49 @@ export interface Statement {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "return-info".
+ */
+export interface ReturnInfo {
+  id: number;
+  /**
+   * 该归还信息所属的商户
+   */
+  merchant: number | Merchant;
+  /**
+   * 设备回收的联系人姓名
+   */
+  return_contact_name: string;
+  /**
+   * 设备回收的联系人电话（建议格式：1xxxxxxxxxx）
+   */
+  return_contact_phone: string;
+  return_address: {
+    province: string;
+    city: string;
+    district?: string | null;
+    /**
+     * 街道、门牌号等详细地址信息
+     */
+    address: string;
+    postal_code?: string | null;
+  };
+  /**
+   * 停用后该地址将不可用于新订单
+   */
+  status: 'active' | 'inactive';
+  /**
+   * 每个商户只能有一个默认归还地址
+   */
+  is_default?: boolean | null;
+  /**
+   * 地址相关的补充说明，如营业时间、特殊要求等
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "user-merchant-credit".
  */
 export interface UserMerchantCredit {
@@ -787,6 +832,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'devices';
         value: number | Device;
+      } | null)
+    | ({
+        relationTo: 'return-info';
+        value: number | ReturnInfo;
       } | null)
     | ({
         relationTo: 'shipping-templates';
@@ -990,6 +1039,29 @@ export interface DevicesSelect<T extends boolean = true> {
   qr_code?: T;
   last_maintenance_date?: T;
   rental_count?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "return-info_select".
+ */
+export interface ReturnInfoSelect<T extends boolean = true> {
+  merchant?: T;
+  return_contact_name?: T;
+  return_contact_phone?: T;
+  return_address?:
+    | T
+    | {
+        province?: T;
+        city?: T;
+        district?: T;
+        address?: T;
+        postal_code?: T;
+      };
+  status?: T;
+  is_default?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

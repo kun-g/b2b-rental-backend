@@ -13,6 +13,7 @@ import { Categories } from './collections/Categories'
 import { Merchants } from './collections/Merchants'
 import { MerchantSKUs } from './collections/MerchantSKUs'
 import { Devices } from './collections/Devices'
+import { ReturnInfo } from './collections/ReturnInfo'
 import { UserMerchantCredit } from './collections/UserMerchantCredit'
 import { ShippingTemplates } from './collections/ShippingTemplates'
 import { Orders } from './collections/Orders'
@@ -71,6 +72,7 @@ export default buildConfig({
     Merchants,
     MerchantSKUs,
     Devices,
+    ReturnInfo,
     ShippingTemplates,
 
     // 授信管理
