@@ -60,6 +60,7 @@ export const merchantAdminsData = {
   geekAdmin: {
     username: 'geek_admin',
     email: 'admin@geek-rental.com',
+    phone: '13900001111',
     password: 'MerchantA123!',
     role: 'merchant_admin' as const,
     status: 'active' as const,
@@ -68,6 +69,7 @@ export const merchantAdminsData = {
   geekMember: {
     username: 'geek_member',
     email: 'member@geek-rental.com',
+    phone: '13900001112',
     password: 'MemberA123!',
     role: 'merchant_member' as const,
     status: 'active' as const,
@@ -76,6 +78,7 @@ export const merchantAdminsData = {
   outdoorAdmin: {
     username: 'outdoor_admin',
     email: 'admin@outdoor-adventure.com',
+    phone: '13900002222',
     password: 'MerchantB123!',
     role: 'merchant_admin' as const,
     status: 'active' as const,

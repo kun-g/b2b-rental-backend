@@ -146,22 +146,18 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   /**
-   * 用于身份验证和接收验证码（非登录账号，选填）
+   * 用于身份验证和接收验证码
    */
-  phone?: string | null;
+  phone: string;
   /**
    * 决定用户在系统中的权限，只能由管理员设置
    */
   role: 'customer' | 'merchant_member' | 'merchant_admin' | 'platform_operator' | 'platform_admin' | 'platform_support';
   /**
-   * 仅商户成员/管理员需要
+   * 商户角色必填
    */
   merchant?: (number | null) | Merchant;
-  /**
-   * MVP建议先实现商户管理员角色
-   */
-  merchant_role?: ('admin' | 'warehouse' | 'operations' | 'finance' | 'readonly') | null;
-  status: 'active' | 'disabled' | 'frozen';
+  status: 'active' | 'disabled';
   last_login_at?: string | null;
   /**
    * 内部备注
@@ -983,7 +979,6 @@ export interface UsersSelect<T extends boolean = true> {
   phone?: T;
   role?: T;
   merchant?: T;
-  merchant_role?: T;
   status?: T;
   last_login_at?: T;
   notes?: T;

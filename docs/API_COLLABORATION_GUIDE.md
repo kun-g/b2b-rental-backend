@@ -6,7 +6,7 @@
 
 ## Payload CMS API 规范
 
-### 1. REST API 基础结构
+### REST API 基础结构
 
 Payload CMS 自动为每个 Collection 生成标准的 CRUD API：
 

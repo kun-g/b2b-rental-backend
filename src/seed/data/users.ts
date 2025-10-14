@@ -7,6 +7,7 @@ export const usersData = {
   platformAdmin: {
     username: 'kun',
     email: 'admin@platform.com',
+    phone: '13900000001',
     password: '123',
     role: 'platform_admin' as const,
     status: 'active' as const,
@@ -15,6 +16,7 @@ export const usersData = {
   platformOperator: {
     username: 'operator',
     email: 'operator@platform.com',
+    phone: '13900000002',
     password: 'Operator123!',
     role: 'platform_operator' as const,
     status: 'active' as const,
@@ -23,6 +25,7 @@ export const usersData = {
   platformSupport: {
     username: 'support',
     email: 'support@platform.com',
+    phone: '13900000003',
     password: 'Support123!',
     role: 'platform_support' as const,
     status: 'active' as const,

@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
 
 /**
  * CreditInvitationUsages Collection - 邀请码使用记录
@@ -19,7 +19,7 @@ export const CreditInvitationUsages: CollectionConfig = {
   },
   access: {
     // 用户可见自己的，商户可见自己商户的，平台可见所有
-    read: (({ req: { user } }) => {
+    read: (({ req: { user } }: AccessArgs<any>) => {
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
@@ -40,7 +40,7 @@ export const CreditInvitationUsages: CollectionConfig = {
         }
       }
       return false
-    }),
+    }) as any,
     // 只允许系统自动创建（通过 API hooks），不允许手动创建
     create: () => false,
     // 不允许修改和删除，保持审计完整性

@@ -13,6 +13,7 @@
 
 import 'dotenv/config'
 import { getPayload, type Payload } from 'payload'
+import pg from 'pg'
 import config from '../payload.config'
 import { usersData } from './data/users'
 import { categoriesData } from './data/categories'
@@ -42,6 +43,13 @@ async function seed() {
   console.log(`   环境: ${process.env.NODE_ENV || 'development'}`)
   console.log(`   模式: ${cleanOnly ? '仅清空' : hasClean ? '清空后创建' : '创建'}`)
   console.log('')
+
+  // ===== 预处理：清理不兼容的数据 =====
+  if ((hasClean || cleanOnly) && dbUri) {
+    console.log('🔧 预处理数据库 schema 变更...')
+    await prepareDatabase(dbUri)
+    console.log('✅ 预处理完成')
+  }
 
   // ===== 初始化 Payload =====
   console.log('🔌 连接数据库...')
@@ -650,6 +658,40 @@ async function seed() {
 }
 
 /**
+ * 预处理数据库 - 处理 schema 变更前的数据清理
+ * 解决从旧 schema 迁移到新 schema 时的数据兼容问题
+ */
+async function prepareDatabase(dbUri: string) {
+  const client = new pg.Client({ connectionString: dbUri })
+
+  try {
+    await client.connect()
+
+    // 1. 给 phone 为 null 的用户填充临时值（因为我们把 phone 改成了必填）
+    const updateResult = await client.query(`
+      UPDATE users
+      SET phone = CONCAT('temp_', id::text)
+      WHERE phone IS NULL
+    `)
+    if (updateResult.rowCount && updateResult.rowCount > 0) {
+      console.log(`   ✓ 修复了 ${updateResult.rowCount} 个用户的 phone 字段`)
+    }
+
+    // 2. 删除 merchant_role 列（如果存在）
+    await client.query(`
+      ALTER TABLE users DROP COLUMN IF EXISTS merchant_role
+    `)
+    console.log(`   ✓ 删除了 merchant_role 字段（如果存在）`)
+
+  } catch (error) {
+    console.warn('   ⚠️  预处理警告:', error)
+    // 不抛出错误，因为某些情况下表可能不存在
+  } finally {
+    await client.end()
+  }
+}
+
+/**
  * 清空数据库
  */
 async function cleanDatabase(payload: Payload) {
@@ -670,7 +712,7 @@ async function cleanDatabase(payload: Payload) {
     'categories',
     'users',
     'media',
-  ]
+  ] as const
 
   for (const collection of collections) {
     try {

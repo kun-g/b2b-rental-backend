@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
 
 /**
  * UserMerchantCredit Collection - 授信管理
@@ -13,7 +13,7 @@ export const UserMerchantCredit: CollectionConfig = {
     group: '授信管理',
   },
   access: {
-    read: (({ req: { user } }) => {
+    read: (({ req: { user } }: AccessArgs<any>) => {
       if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
         return true
       }
@@ -36,11 +36,11 @@ export const UserMerchantCredit: CollectionConfig = {
         }
       }
       return false
-    }),
+    }) as any,
     create: ({ req: { user } }) => {
       return user?.role === 'merchant_admin'
     },
-    update: (({ req: { user } }) => {
+    update: (({ req: { user } }: AccessArgs<any>) => {
       if (user?.role === 'platform_admin') {
         return true
       }
@@ -54,8 +54,8 @@ export const UserMerchantCredit: CollectionConfig = {
         }
       }
       return false
-    }),
-    delete: (({ req: { user } }) => {
+    }) as any,
+    delete: (({ req: { user } }: AccessArgs<any>) => {
       if (user?.role === 'platform_admin') {
         return true
       }
@@ -69,7 +69,7 @@ export const UserMerchantCredit: CollectionConfig = {
         }
       }
       return false
-    }),
+    }) as any,
   },
   fields: [
     {

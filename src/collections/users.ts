@@ -77,10 +77,11 @@ export const Users: CollectionConfig = {
     {
       name: 'phone',
       type: 'text',
+      required: true,
       unique: true,
       label: '手机号',
       admin: {
-        description: '用于身份验证和接收验证码（非登录账号，选填）',
+        description: '用于身份验证和接收验证码',
       },
     },
     {
@@ -119,24 +120,15 @@ export const Users: CollectionConfig = {
       relationTo: 'merchants',
       label: '所属商户',
       admin: {
-        description: '仅商户成员/管理员需要',
+        description: '商户角色必填',
         condition: (data) => data.role === 'merchant_member' || data.role === 'merchant_admin',
       },
-    },
-    {
-      name: 'merchant_role',
-      type: 'select',
-      label: '商户内角色',
-      options: [
-        { label: '商户管理员', value: 'admin' },
-        { label: '仓配人员', value: 'warehouse' },
-        { label: '商品运营', value: 'operations' },
-        { label: '财务人员', value: 'finance' },
-        { label: '只读成员', value: 'readonly' },
-      ],
-      admin: {
-        description: 'MVP建议先实现商户管理员角色',
-        condition: (data) => data.role === 'merchant_member' || data.role === 'merchant_admin',
+      validate: (value: any, { data }: any) => {
+        // 商户角色必须填写所属商户
+        if ((data.role === 'merchant_member' || data.role === 'merchant_admin') && !value) {
+          return '商户角色必须选择所属商户'
+        }
+        return true
       },
     },
     {
@@ -148,7 +140,6 @@ export const Users: CollectionConfig = {
       options: [
         { label: '正常', value: 'active' },
         { label: '已禁用', value: 'disabled' },
-        { label: '已冻结', value: 'frozen' },
       ],
     },
     {
