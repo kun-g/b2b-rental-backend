@@ -153,21 +153,9 @@ export const UserMerchantCredit: CollectionConfig = {
       label: '来源',
       options: [
         { label: '手动创建', value: 'manual' },
-        { label: '邀请码', value: 'invitation' },
       ],
       admin: {
         description: '授信记录的创建来源',
-        readOnly: true,
-      },
-    },
-    {
-      name: 'invitation_usage',
-      type: 'relationship',
-      relationTo: 'credit-invitation-usages',
-      label: '邀请码使用记录',
-      admin: {
-        description: '通过邀请码创建的授信记录关联的使用记录',
-        condition: (data) => data.source === 'invitation',
         readOnly: true,
       },
     },

@@ -74,27 +74,7 @@ curl -X GET "${API_URL}/api/merchant-skus?where[status][equals]=active" \
 
 ## 3. 核心业务流程
 
-### 场景一：使用邀请码获取授信
-
-```bash
-# 步骤1: 验证邀请码
-curl -X POST ${API_URL}/api/credit-invitations/validate \
-  -H "Authorization: JWT ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "invitation_code": "YOUZU2025"
-  }'
-
-# 步骤2: 使用邀请码（获取授信）
-curl -X POST ${API_URL}/api/credit-invitations/use \
-  -H "Authorization: JWT ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "invitation_code": "YOUZU2025"
-  }'
-```
-
-### 场景二：创建租赁订单
+### 场景一：创建租赁订单
 
 ```bash
 # 步骤1: 获取 SKU 详情
@@ -203,23 +183,6 @@ class APIClient {
   async createOrder(orderData: any) {
     return this.request('POST', '/api/orders', orderData)
   }
-
-  // 使用邀请码
-  async useInvitationCode(code: string) {
-    // 先验证
-    const validation = await this.request('POST', '/api/credit-invitations/validate', {
-      invitation_code: code,
-    })
-
-    if (validation.valid) {
-      // 使用邀请码
-      return this.request('POST', '/api/credit-invitations/use', {
-        invitation_code: code,
-      })
-    }
-
-    throw new Error(validation.message)
-  }
 }
 
 // 使用示例
@@ -306,19 +269,6 @@ class APIClient:
         """创建订单"""
         return self.request('POST', '/api/orders', data=order_data)
 
-    def use_invitation_code(self, code):
-        """使用邀请码"""
-        # 先验证
-        validation = self.request('POST', '/api/credit-invitations/validate',
-                                 data={'invitation_code': code})
-
-        if validation.get('valid'):
-            # 使用邀请码
-            return self.request('POST', '/api/credit-invitations/use',
-                              data={'invitation_code': code})
-        else:
-            raise Exception(validation.get('message'))
-
 # 使用示例
 if __name__ == '__main__':
     client = APIClient()
@@ -354,14 +304,6 @@ if __name__ == '__main__':
 ## 6. 测试数据
 
 运行 `pnpm seed` 后，系统会创建以下测试数据供开发使用：
-
-### 可用的邀请码
-
-| 邀请码 | 商户 | 授信额度 | 状态 |
-|--------|------|---------|------|
-| YOUZU2025 | 优租设备 | 50,000 | 激活 |
-| CHANGZU2025 | 长租科技 | 30,000 | 激活 |
-| ZULIN2025 | 租赁之家 | 20,000 | 激活 |
 
 ### 可租赁的 SKU
 

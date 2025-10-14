@@ -88,8 +88,8 @@
 **对应 PRD**: 2.1 账号类型 - 商户账号
 
 **入驻流程**:
-1. 平台发送邀请码/链接
-2. 商户接受邀请，填写资料
+1. 平台创建商户账号
+2. 商户填写资料
 3. 平台审核（pending→approved/rejected）
 4. 通过后可上架SKU
 
@@ -98,7 +98,6 @@
 - `contact` - 联系信息（姓名、电话、邮箱）
 - `settlement_account` - 结算账户
 - `status` - 状态（pending/approved/rejected/disabled）
-- `invitation_code` - 邀请码（自动生成）
 - `business_license` - 营业执照
 
 **审核状态**:

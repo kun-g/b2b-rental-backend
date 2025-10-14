@@ -20,7 +20,6 @@ import { categoriesData } from './data/categories'
 import { merchantsData, merchantAdminsData } from './data/merchants'
 import { skusData } from './data/skus'
 import { devicesData } from './data/devices'
-import { invitationsData, invitationUsagesData } from './data/invitations'
 import { createOrderScenarios } from './scenarios/orders'
 
 async function seed() {
@@ -510,73 +509,7 @@ async function seed() {
     })
     console.log(`   ✓ ${frank.username} × ${merchantA.name}: 3000元`)
 
-    // 10. 创建授信邀请码
-    console.log('\n🎟️  创建授信邀请码...')
-    const invite2024A = await payload.create({
-      collection: 'credit-invitations',
-      data: {
-        ...invitationsData.invite2024A,
-        merchant: merchantA.id,
-        expires_at: invitationsData.invite2024A.expires_at(),
-      },
-    })
-    console.log(`   ✓ ${invite2024A.invitation_code} → ${merchantA.name}`)
-
-    const invite2024B = await payload.create({
-      collection: 'credit-invitations',
-      data: {
-        ...invitationsData.invite2024B,
-        merchant: merchantB.id,
-        expires_at: invitationsData.invite2024B.expires_at(),
-      },
-    })
-    console.log(`   ✓ ${invite2024B.invitation_code} → ${merchantB.name}`)
-
-    const expired2023 = await payload.create({
-      collection: 'credit-invitations',
-      data: {
-        ...invitationsData.expired2023,
-        merchant: merchantA.id,
-        expires_at: invitationsData.expired2023.expires_at(),
-      },
-    })
-    console.log(`   ✓ ${expired2023.invitation_code} (已过期)`)
-
-    // 创建邀请码使用记录
-    await payload.create({
-      collection: 'credit-invitation-usages',
-      data: {
-        ...invitationUsagesData.usage1,
-        invitation: invite2024A.id,
-        merchant: merchantA.id,
-        invitation_code: invitationsData.invite2024A.invitation_code,
-        user: alice.id,
-      },
-    })
-
-    await payload.create({
-      collection: 'credit-invitation-usages',
-      data: {
-        ...invitationUsagesData.usage2,
-        invitation: invite2024A.id,
-        merchant: merchantA.id,
-        invitation_code: invitationsData.invite2024A.invitation_code,
-        user: frank.id,
-      },
-    })
-
-    await payload.create({
-      collection: 'credit-invitation-usages',
-      data: {
-        ...invitationUsagesData.usage3,
-        invitation: invite2024B.id,
-        merchant: merchantB.id,
-        invitation_code: invitationsData.invite2024B.invitation_code,
-        user: bob.id,
-      },
-    })
-
-    // 11. 创建订单场景
+    // 10. 创建订单场景
     await createOrderScenarios(payload, {
       users: { alice, bob, charlie },
       merchants: { merchantA, merchantB },
@@ -584,7 +517,7 @@ async function seed() {
       devices: { djiMini3_003, tent2Person_003, sonyA7M4_001 },
     })
 
-    // 12. 创建审计日志
+    // 11. 创建审计日志
     console.log('\n📝 创建审计日志...')
     await payload.create({
       collection: 'audit-logs',
@@ -635,7 +568,6 @@ async function seed() {
     console.log(`   设备: ${Object.keys(devicesData).length} 个`)
     console.log(`   授信: 6 条`)
     console.log(`   运费模板: 2 个`)
-    console.log(`   邀请码: 3 个`)
     console.log(`   订单: 10 个 (覆盖所有状态)`)
     console.log(`   审计日志: 3 条`)
 
@@ -702,8 +634,6 @@ async function cleanDatabase(payload: Payload) {
     'payments',
     'logistics',
     'orders',
-    'credit-invitation-usages',
-    'credit-invitations',
     'user-merchant-credit',
     'devices',
     'merchant-skus',

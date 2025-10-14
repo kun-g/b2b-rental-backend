@@ -49,17 +49,9 @@ GET    /api/users/me              # 获取当前用户信息
 | devices | `/api/devices` | 设备管理 |
 | orders | `/api/orders` | 订单管理 |
 | user-merchant-credit | `/api/user-merchant-credit` | 用户授信 |
-| credit-invitations | `/api/credit-invitations` | 授信邀请码 |
 | shipping-templates | `/api/shipping-templates` | 运费模板 |
 | payments | `/api/payments` | 支付记录 |
 | logistics | `/api/logistics` | 物流信息 |
-
-### 自定义 API 端点
-
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| `/api/credit-invitations/validate` | POST | 验证邀请码有效性 |
-| `/api/credit-invitations/use` | POST | 使用邀请码获取授信 |
 
 ## 认证方式
 
@@ -139,27 +131,7 @@ curl -X POST http://localhost:3000/api/orders \
   }'
 ```
 
-### 3. 使用邀请码
-
-```bash
-# 步骤1: 验证邀请码
-curl -X POST http://localhost:3000/api/credit-invitations/validate \
-  -H "Authorization: JWT ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "invitation_code": "INVITE2025"
-  }'
-
-# 步骤2: 使用邀请码
-curl -X POST http://localhost:3000/api/credit-invitations/use \
-  -H "Authorization: JWT ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "invitation_code": "INVITE2025"
-  }'
-```
-
-### 4. 查询授信额度
+### 3. 查询授信额度
 
 ```bash
 # 获取当前用户的所有授信
