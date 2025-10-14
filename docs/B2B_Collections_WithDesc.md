@@ -4,7 +4,7 @@
 - 10-14更新
 	- 结合当前设计，参考原设计对collections进行了更新
 https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
-	- 删除了类目管理
+	- 修改了的device的状态
 	- 更新了字段命名以及相关内容关联的主键
  	- user增加account(账号类型)，订单管理增加logistics_id（租赁平台的物流ID）
   	- Logistics增加logistics_type区分是发货还是归还
@@ -93,7 +93,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 |--------|-----------|
 | merchant_sku | 所属 SKU |
 | sn | 设备序列号（唯一） |
-| status | 设备状态（in_stock / in_rent / in_transit / in_maintenance / scrapped） |
+| status | 设备状态（in_active / used / active） |
 | current_order | 当前绑定订单 |
 | rental_count | 累计租赁次数 |
 
@@ -107,7 +107,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | return_contact_name | 回收联系人姓名 |
 | return_contact_phone | 回收联系人电话 |
 | return_address | 回收地址 |
-| status | 状态（active / inactive） |
+| status | 状态（active / in_active） |
 
 ---
 
@@ -154,6 +154,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | status | 状态（NEW / PAID / TO_SHIP / SHIPPED / IN_RENT / RETURNING / RETURNED / COMPLETED / CANCELED） |
 | shipping_date | 发货时间 |
 | rent_end_date | 租期结束日 |
+| order_creat_at | 租赁订单创建时间 |
 | daily_fee_snapshot | 日租金快照 |
 | shipping_fee_snapshot | 运费快照 |
 | credit_hold_amount | 授信冻结金额 |
@@ -193,7 +194,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | amount_shipping | 运费 |
 | amount_total | 总金额 |
 | status | 支付状态（pending / paid / refunded / failed） |
-| creat_at| 创建时间 |
+| pay_creat_at| 支付订单创建时间 |
 | paid_at | 支付时间 |
 | channel | 支付渠道（wechat / alipay / bank / other） |
 
@@ -234,7 +235,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | parent | 父类目ID |
 | path | 类目路径（自动生成） |
 | sort | 排序号 |
-| status | 状态（active / inactive） |
+| status | 状态（active / in_active） |
 
 ---
 ## 以下为后续规划的内容
