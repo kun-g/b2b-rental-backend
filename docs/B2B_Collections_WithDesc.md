@@ -38,6 +38,8 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 - **AuditLogs** - 审计日志（敏感操作留痕）
 - **Media** - 媒体文件（图片、文件上传）
 
+### 6. 平台管理 (1个)
+- **Categories** - 类目管理（平台维护，树形结构）
 ---
 
 ## Collections说明
@@ -49,8 +51,10 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | id | 用户ID |
 | phone | 手机号 |
 | email | 邮箱 |
+| user_name| 用户名 |
 | role | 角色（customer / merchant_member / merchant_admin / platform_operator / platform_admin / platform_support） |
 | merchant | 所属商户（商户角色必填） |
+| last_login_at | 最近登录时间 |
 | status | 账号状态（active / disabled） |
 
 ---
@@ -221,11 +225,21 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | ip_address | 操作IP |
 | user_agent | 操作设备信息 |
 
+## 13.  Categories（类目管理）
+
+| 字段名 | 中文说明 |
+|--------|-----------|
+| name | 类目名称 |
+| parent | 父类目ID |
+| path | 类目路径（自动生成） |
+| sort | 排序号 |
+| status | 状态（active / inactive） |
+
 ---
 ## 以下为后续规划的内容
 ---
 
-### 13.  Statements（对账单）
+### 14.  Statements（对账单）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
