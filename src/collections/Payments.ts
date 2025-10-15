@@ -1,15 +1,40 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
 
 /**
- * Payments Collection - 支付记录
- * 对应 PRD 7 数据模型 payment
+ * Payments Collection - 支付记录（统一管理所有支付类型）
+ * 对应 PRD 7 数据模型 payment 和 B2B_Collections_WithDesc.md
+ *
+ * 设计说明：
+ * - 统一管理租赁支付、逾期补收、改址差额等所有支付场景
+ * - 通过 type 字段区分支付用途
+ * - 使用正负金额表示收款/退款（负数=退款）
+ * - 替代原 Surcharges Collection（功能重复）
  */
 export const Payments: CollectionConfig = {
   slug: 'payments',
   admin: {
     useAsTitle: 'transaction_no',
-    defaultColumns: ['transaction_no', 'order', 'amount_total', 'status', 'paid_at'],
+    defaultColumns: ['transaction_no', 'order', 'type', 'amount', 'status', 'paid_at'],
     group: '订单管理',
+  },
+  access: {
+    create: ({ req: { user } }) => {
+      // 只有平台和商户可以创建支付记录
+      return ['platform_admin', 'platform_operator', 'merchant_admin', 'merchant_member'].includes(
+        user?.role || '',
+      )
+    },
+    update: (({ req: { user } }: AccessArgs<any>) => {
+      // 只有平台可以修改支付记录
+      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+        return true
+      }
+      return false
+    }) as any,
+    delete: ({ req: { user } }) => {
+      // 只有平台管理员可以删除支付记录
+      return user?.role === 'platform_admin'
+    },
   },
   fields: [
     {
@@ -26,29 +51,63 @@ export const Payments: CollectionConfig = {
       unique: true,
       label: '交易流水号',
       admin: {
-        description: '支付渠道返回的交易号',
+        description: '系统生成的唯一交易号',
       },
     },
     {
-      name: 'amount_rent',
-      type: 'number',
-      required: true,
-      min: 0,
-      label: '租金（元）',
+      name: 'out_pay_no',
+      type: 'text',
+      label: '外部支付单号',
+      admin: {
+        description: '微信/支付宝等第三方支付平台返回的支付单号',
+      },
     },
     {
-      name: 'amount_shipping',
-      type: 'number',
+      name: 'type',
+      type: 'select',
       required: true,
-      min: 0,
-      label: '运费（元）',
+      label: '支付类型',
+      options: [
+        { label: '租赁支付（租金+运费）', value: 'rent' },
+        { label: '逾期补收', value: 'overdue' },
+        { label: '改址补收（运费增加）', value: 'addr_up' },
+        { label: '改址退款（运费减少）', value: 'addr_down' },
+      ],
+      admin: {
+        description: '区分支付用途（统一管理所有支付场景）',
+      },
     },
     {
-      name: 'amount_total',
+      name: 'amount',
       type: 'number',
       required: true,
-      min: 0,
-      label: '总金额（元）',
+      label: '金额（元）',
+      admin: {
+        description: '正数表示应收款，负数表示退款',
+      },
+    },
+    {
+      name: 'amount_detail',
+      type: 'group',
+      label: '金额明细',
+      admin: {
+        description: '仅在 type=rent 时需要填写',
+      },
+      fields: [
+        {
+          name: 'rent',
+          type: 'number',
+          label: '租金（元）',
+          admin: {
+            description: '租期天数 × 日租金',
+          },
+        },
+        {
+          name: 'shipping',
+          type: 'number',
+          label: '运费（元）',
+        },
+      ],
     },
     {
       name: 'status',
@@ -85,25 +144,31 @@ export const Payments: CollectionConfig = {
       ],
     },
     {
-      name: 'refund_amount',
-      type: 'number',
-      label: '退款金额（元）',
-      min: 0,
-    },
-    {
-      name: 'refund_at',
-      type: 'date',
-      label: '退款时间',
+      name: 'notes',
+      type: 'textarea',
+      label: '备注',
       admin: {
-        date: {
-          pickerAppearance: 'dayAndTime',
-        },
+        description: '支付备注、退款原因等',
       },
     },
-    {
-      name: 'refund_reason',
-      type: 'textarea',
-      label: '退款原因',
-    },
   ],
+  hooks: {
+    beforeChange: [
+      async ({ data, operation }) => {
+        // 创建支付记录时生成交易流水号
+        if (operation === 'create' && !data.transaction_no) {
+          const typePrefix = {
+            rent: 'RENT',
+            overdue: 'OVER',
+            addr_up: 'ADDU',
+            addr_down: 'ADDD',
+          }[data.type || 'rent']
+
+          data.transaction_no = `${typePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+        }
+
+        return data
+      },
+    ],
+  },
 }

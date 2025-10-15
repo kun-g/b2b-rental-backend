@@ -1,5 +1,4 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import type { ShippingTemplate } from '@/payload-types'
 import { calculateShippingFee } from '../utils/calculateShipping'
 
 /**
@@ -293,13 +292,9 @@ export const Orders: CollectionConfig = {
       relationTo: 'payments',
       hasMany: true,
       label: '支付记录',
-    },
-    {
-      name: 'surcharges',
-      type: 'relationship',
-      relationTo: 'surcharges',
-      hasMany: true,
-      label: '附加费用',
+      admin: {
+        description: '包含租赁支付、逾期补收、改址差额等所有支付',
+      },
     },
     {
       name: 'statement',

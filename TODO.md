@@ -7,33 +7,60 @@
 - [x] 实现基础 Hooks（订单号生成、状态流转、授信历史记录等）
 - [x] 生成 TypeScript 类型定义
 - [x] 编写 Collections 设计文档
+- [x] 配置 PostgreSQL 数据库连接
+- [x] 本地开发环境 SQLite3 支持（测试环境）
+- [x] 数据库自动迁移（Payload push: true）
+- [x] 创建完整 Seed 数据（12个用户、3个商户、10个订单等）
+- [x] 下单时根据地址和模板计算运费
+- [x] 不发地区拦截逻辑
+- [x] 实现 PAID → TO_SHIP 自动流转
 
 ## 待完成 🚧
 
 ### 优先级 P0（必须完成）
 
-#### 1. 数据库配置
-- [ ] 配置 PostgreSQL 数据库连接
-- [ ] 本地开发环境可选SQLite3
-- [ ] 运行数据库迁移
-- [ ] 创建初始 Seed 数据
-  - 平台管理员账号
-  - 默认类目（电子设备、无人机等）
-  - 测试商户和用户
+#### 1. Collections 字段对齐（基于文档 B2B_Collections_WithDesc.md）
+
+**Orders Collection 字段补充**（影响核心业务流程）
+- [ ] 添加 `return_contact_name` - 归还联系人姓名
+- [ ] 添加 `return_contact_phone` - 归还联系人电话
+- [ ] 添加 `return_address` - 归还地址（或使用 group）
+- [ ] 添加 `transaction_no` - 交易流水号（关联 Payments）
+- [ ] 添加 `out_pay_no` - 外部支付单号
+- [ ] 添加 `shipping_date` - 实际发货时间
+- [x] ~~重命名 `shipping_fee` → `shipping_fee_snapshot`~~（保持现有命名）
+
+**Payments Collection 字段补充**（已完成部分）
+- [x] 添加 `out_pay_no` - 外部支付单号
+- [x] 添加 `type` - 支付类型（rent / overdue / addr_up / addr_down）
+- [ ] 添加 `pay_creat_at` - 支付订单创建时间
+- [x] 重构为统一支付模型（整合 Surcharges 功能）
+
+**Logistics Collection 字段补充**
+- [ ] 添加 `logistics_type` - 物流类型（shipping / returning）
+- [ ] 评估是否拆分发货/归还为两条记录（设计决策待定）
+
+**设计文档同步**
+- [ ] 更新 `docs/B2B_Collections_WithDesc.md`
+  - 标记 Statements 和 Surcharges 为"已实现"
+  - 说明 Accounts/Users 合并的设计决策
+  - 更新 Payments 字段设计（统一支付模型）
+  - 更新 Orders 归还地址字段
+  - 更新 Logistics 字段说明
 
 #### 2. 业务逻辑补充
-- [ ] **授信管理**
-  - [ ] 订单创建时冻结授信额度
-  - [ ] 订单完成/取消时释放授信额度
-  - [ ] 授信额度不足时阻止下单
+- [ ] **授信管理**（优先级高，影响下单流程）
+  - [ ] 订单创建时冻结授信额度（已记录 credit_hold_amount，需实际扣减 UserMerchantCredit.used_credit）
+  - [ ] 订单完成/取消时释放授信额度（有 Hook 占位，需实现逻辑）
+  - [ ] 授信额度不足时阻止下单（需在订单创建前验证）
 - [ ] **订单状态机**
   - [ ] 完善状态流转验证（如 SHIPPED 不能回退到 TO_SHIP）
-  - [ ] 实现 PAID → TO_SHIP 自动流转
+  - [x] ~~实现 PAID → TO_SHIP 自动流转~~（已完成）
   - [ ] 实现逾期计算和逾期支付单生成
 - [ ] **运费计算**
-  - [ ] 下单时根据地址和模板计算运费
+  - [x] ~~下单时根据地址和模板计算运费~~（已完成）
   - [ ] 改址时计算运费差额
-  - [ ] 不发地区拦截逻辑
+  - [x] ~~不发地区拦截逻辑~~（已完成）
 - [ ] **对账单生成**
   - [ ] 订单完成时自动生成对账单
   - [ ] 对账单包含所有费用明细
@@ -66,38 +93,56 @@
 - [ ] 自定义授信管理页面（显示额度使用情况）
 - [ ] 自定义对账单页面（支持导出PDF/Excel）
 
+### 优先级 P1.5（架构评估）
+
+#### 7. 数据模型一致性评估
+- [ ] **Orders ↔ Logistics 关联设计**
+  - 当前：双向关联（Orders.logistics + Logistics.order），可能导致不一致
+  - 建议：评估是否只保留单向关联（Logistics → Order）
+- [ ] **Payments ↔ Surcharges 合并评估**
+  - 当前：已将 Surcharges 功能整合到 Payments.type 中
+  - 待定：评估是否移除 Surcharges Collection
+- [ ] **Logistics 发货/归还拆分评估**
+  - 当前：一条记录包含发货和归还信息（ship_no + return_ship_no）
+  - 备选：拆分为两条记录，通过 logistics_type 区分
+  - 待定：根据实际业务场景决策
+- [ ] **Accounts/Users 分离评估**
+  - 当前：合并在 Users Collection（简化 Payload auth 配置）
+  - 备选：分离为两个 Collection（支持一账号多身份）
+  - 建议：MVP 保持现状，后续根据需求调整
+
 ### 优先级 P2（可选）
 
-#### 7. 支付集成
+#### 8. 支付集成
 - [ ] 集成微信支付
 - [ ] 集成支付宝
 - [ ] 实现支付回调处理
 - [ ] 实现退款逻辑
 
-#### 8. 物流集成
+#### 9. 物流集成
 - [ ] 对接物流API（顺丰、德邦等）
 - [ ] 实现物流轨迹自动回传
 - [ ] 实现签收自动确认
 - [ ] 物流异常提醒
 
-#### 9. 通知系统
+#### 10. 通知系统
 - [ ] 邮件通知（订单状态变更、审核结果等）
 - [ ] 短信通知（订单确认、发货提醒等）
 - [ ] 站内消息
 
-#### 10. 报表统计
+#### 11. 报表统计
 - [ ] 商户订单统计（成交笔数、金额、租赁率）
 - [ ] 用户消费统计
 - [ ] 设备利用率统计
 - [ ] 逾期分析
 
-#### 11. 批量操作
+#### 12. 批量操作
 - [ ] 批量导入SKU
 - [ ] 批量导入设备
 - [ ] 批量导出订单
 - [ ] 批量导出对账单
 
-#### 12. 高级功能
+#### 13. 高级功能
 - [ ] SKU 租期日历（显示可租时段）
 - [ ] 设备二维码生成与扫码管理
 - [ ] 发票管理
@@ -121,6 +166,7 @@
 - [ ] API 文档（GraphQL Schema）
 - [ ] 部署文档
 - [ ] 运维手册
+- [ ] Collections 设计文档同步（详见 P0-1 设计文档同步任务）
 
 ---
 

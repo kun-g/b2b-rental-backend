@@ -78,7 +78,6 @@ export interface Config {
     orders: Order;
     logistics: Logistic;
     payments: Payment;
-    surcharges: Surcharge;
     statements: Statement;
     'audit-logs': AuditLog;
     media: Media;
@@ -99,7 +98,6 @@ export interface Config {
     orders: OrdersSelect<false> | OrdersSelect<true>;
     logistics: LogisticsSelect<false> | LogisticsSelect<true>;
     payments: PaymentsSelect<false> | PaymentsSelect<true>;
-    surcharges: SurchargesSelect<false> | SurchargesSelect<true>;
     statements: StatementsSelect<false> | StatementsSelect<true>;
     'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -510,8 +508,10 @@ export interface Order {
     region_code?: string | null;
   };
   logistics?: (number | null) | Logistic;
+  /**
+   * 包含租赁支付、逾期补收、改址差额等所有支付
+   */
   payments?: (number | Payment)[] | null;
-  surcharges?: (number | Surcharge)[] | null;
   statement?: (number | null) | Statement;
   is_overdue?: boolean | null;
   overdue_days?: number | null;
@@ -576,40 +576,38 @@ export interface Payment {
   id: number;
   order: number | Order;
   /**
-   * 支付渠道返回的交易号
+   * 系统生成的唯一交易号
    */
   transaction_no: string;
-  amount_rent: number;
-  amount_shipping: number;
-  amount_total: number;
+  /**
+   * 微信/支付宝等第三方支付平台返回的支付单号
+   */
+  out_pay_no?: string | null;
+  /**
+   * 区分支付用途（统一管理所有支付场景）
+   */
+  type: 'rent' | 'overdue' | 'addr_up' | 'addr_down';
+  /**
+   * 正数表示应收款，负数表示退款
+   */
+  amount: number;
+  /**
+   * 仅在 type=rent 时需要填写
+   */
+  amount_detail?: {
+    /**
+     * 租期天数 × 日租金
+     */
+    rent?: number | null;
+    shipping?: number | null;
+  };
   status: 'pending' | 'paid' | 'refunded' | 'failed';
   paid_at?: string | null;
   channel?: ('wechat' | 'alipay' | 'bank' | 'other') | null;
-  refund_amount?: number | null;
-  refund_at?: string | null;
-  refund_reason?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "surcharges".
- */
-export interface Surcharge {
-  id: number;
-  order: number | Order;
-  type: 'overdue' | 'addr_up' | 'addr_down';
   /**
-   * 正数为补收，负数为退款
+   * 支付备注、退款原因等
    */
-  amount: number;
-  status: 'pending' | 'paid' | 'refunded';
-  paid_at?: string | null;
-  refund_at?: string | null;
-  /**
-   * 如：逾期3天、改址到偏远地区补差20元
-   */
-  description?: string | null;
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -856,10 +854,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'payments';
         value: number | Payment;
-      } | null)
-    | ({
-        relationTo: 'surcharges';
-        value: number | Surcharge;
       } | null)
     | ({
         relationTo: 'statements';
@@ -1160,7 +1154,6 @@ export interface OrdersSelect<T extends boolean = true> {
       };
   logistics?: T;
   payments?: T;
-  surcharges?: T;
   statement?: T;
   is_overdue?: T;
   overdue_days?: T;
@@ -1211,30 +1204,19 @@ export interface LogisticsSelect<T extends boolean = true> {
 export interface PaymentsSelect<T extends boolean = true> {
   order?: T;
   transaction_no?: T;
-  amount_rent?: T;
-  amount_shipping?: T;
-  amount_total?: T;
+  out_pay_no?: T;
+  type?: T;
+  amount?: T;
+  amount_detail?:
+    | T
+    | {
+        rent?: T;
+        shipping?: T;
+      };
   status?: T;
   paid_at?: T;
   channel?: T;
-  refund_amount?: T;
-  refund_at?: T;
-  refund_reason?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "surcharges_select".
- */
-export interface SurchargesSelect<T extends boolean = true> {
-  order?: T;
-  type?: T;
-  amount?: T;
-  status?: T;
-  paid_at?: T;
-  refund_at?: T;
-  description?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

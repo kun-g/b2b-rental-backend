@@ -77,15 +77,18 @@ export async function createOrderScenarios(
     },
   })
 
-  // 创建支付记录
+  // 创建支付记录（租赁支付）
   await payload.create({
     collection: 'payments',
     data: {
       order: order2.id,
       transaction_no: 'PAY202410120002',
-      amount_rent: 350,
-      amount_shipping: 10,
-      amount_total: 360,
+      type: 'rent',
+      amount: 360,
+      amount_detail: {
+        rent: 350,
+        shipping: 10,
+      },
       status: 'paid',
       channel: 'wechat',
       paid_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1小时前支付
@@ -120,29 +123,36 @@ export async function createOrderScenarios(
     },
   })
 
+  // 初始租赁支付
   await payload.create({
     collection: 'payments',
     data: {
       order: order3.id,
       transaction_no: 'PAY202410120003',
-      amount_rent: 175,
-      amount_shipping: 10,
-      amount_total: 185,
+      type: 'rent',
+      amount: 185,
+      amount_detail: {
+        rent: 175,
+        shipping: 10,
+      },
       status: 'paid',
       channel: 'alipay',
       paid_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     },
   })
 
-  // 创建改址补差记录
+  // 改址补差支付（运费从10元增加到15元）
   await payload.create({
-    collection: 'surcharges',
+    collection: 'payments',
     data: {
       order: order3.id,
+      transaction_no: 'PAY202410120003-ADDR1',
       type: 'addr_up',
       amount: 5,
       status: 'paid',
-      description: '改址运费补差：10元 -> 15元',
+      channel: 'alipay',
+      paid_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      notes: '改址运费补差：10元 -> 15元',
     },
   })
   console.log(`   ✓ 订单3: TO_SHIP状态 (改址1次)`)
@@ -179,9 +189,12 @@ export async function createOrderScenarios(
     data: {
       order: order4.id,
       transaction_no: 'PAY202410120004',
-      amount_rent: 350,
-      amount_shipping: 12,
-      amount_total: 362,
+      type: 'rent',
+      amount: 362,
+      amount_detail: {
+        rent: 350,
+        shipping: 12,
+      },
       status: 'paid',
       channel: 'wechat',
       paid_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -223,9 +236,12 @@ export async function createOrderScenarios(
     data: {
       order: order5.id,
       transaction_no: 'PAY202410120005',
-      amount_rent: 350,
-      amount_shipping: 10,
-      amount_total: 360,
+      type: 'rent',
+      amount: 360,
+      amount_detail: {
+        rent: 350,
+        shipping: 10,
+      },
       status: 'paid',
       channel: 'wechat',
       paid_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -288,9 +304,12 @@ export async function createOrderScenarios(
     data: {
       order: order6.id,
       transaction_no: 'PAY202409100006',
-      amount_rent: 750,
-      amount_shipping: 20,
-      amount_total: 770,
+      type: 'rent',
+      amount: 770,
+      amount_detail: {
+        rent: 750,
+        shipping: 20,
+      },
       status: 'paid',
       channel: 'alipay',
       paid_at: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
@@ -344,9 +363,12 @@ export async function createOrderScenarios(
     data: {
       order: order7.id,
       transaction_no: 'PAY202409200007',
-      amount_rent: 700,
-      amount_shipping: 5,
-      amount_total: 705,
+      type: 'rent',
+      amount: 705,
+      amount_detail: {
+        rent: 700,
+        shipping: 5,
+      },
       status: 'paid',
       channel: 'wechat',
       paid_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
@@ -401,9 +423,12 @@ export async function createOrderScenarios(
     data: {
       order: order8.id,
       transaction_no: 'PAY202409050008',
-      amount_rent: 175,
-      amount_shipping: 20,
-      amount_total: 195,
+      type: 'rent',
+      amount: 195,
+      amount_detail: {
+        rent: 175,
+        shipping: 20,
+      },
       status: 'paid',
       channel: 'wechat',
       paid_at: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
@@ -454,29 +479,36 @@ export async function createOrderScenarios(
     },
   })
 
+  // 初始租赁支付
   await payload.create({
     collection: 'payments',
     data: {
       order: order9.id,
       transaction_no: 'PAY202408100009',
-      amount_rent: 350,
-      amount_shipping: 5,
-      amount_total: 455,
+      type: 'rent',
+      amount: 355,
+      amount_detail: {
+        rent: 350,
+        shipping: 5,
+      },
       status: 'paid',
       channel: 'wechat',
       paid_at: new Date(Date.now() - 65 * 24 * 60 * 60 * 1000).toISOString(),
     },
   })
 
-  // 逾期费
+  // 逾期补收（逾期2天，50元/天）
   await payload.create({
-    collection: 'surcharges',
+    collection: 'payments',
     data: {
       order: order9.id,
+      transaction_no: 'PAY202408100009-OVERDUE',
       type: 'overdue',
-      amount: 100, // 逾期2天
+      amount: 100,
       status: 'paid',
-      description: '逾期2天: 50元/天 × 2天',
+      channel: 'wechat',
+      paid_at: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+      notes: '逾期2天: 50元/天 × 2天',
     },
   })
 
@@ -544,18 +576,40 @@ export async function createOrderScenarios(
     },
   })
 
+  // 初始租赁支付
   await payload.create({
     collection: 'payments',
     data: {
       order: order10.id,
       transaction_no: 'PAY202410050010',
-      amount_rent: 175,
-      amount_shipping: 20,
-      amount_total: 0, // 已退款
-      status: 'refunded',
+      type: 'rent',
+      amount: 195,
+      amount_detail: {
+        rent: 175,
+        shipping: 20,
+      },
+      status: 'paid',
       channel: 'alipay',
       paid_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-      refund_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  })
+
+  // 取消订单退款（使用负金额）
+  await payload.create({
+    collection: 'payments',
+    data: {
+      order: order10.id,
+      transaction_no: 'PAY202410050010-REFUND',
+      type: 'rent',
+      amount: -195,
+      amount_detail: {
+        rent: -175,
+        shipping: -20,
+      },
+      status: 'refunded',
+      channel: 'alipay',
+      paid_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      notes: '订单取消，全额退款',
     },
   })
   console.log(`   ✓ 订单10: CANCELED状态 (已取消)`)

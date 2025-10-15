@@ -41,7 +41,12 @@
       "Bash(nc:*)",
       "Bash(ip route:*)",
       "Bash(pnpm add:*)",
-      "Bash(pnpm generate:types:*)"
+      "Bash(pnpm generate:types:*)",
+      "Bash(rm:*)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm seed:*)",
+      "Bash(psql:*)",
+      "Bash(pnpm exec tsx:*)"
     ],
     "deny": [],
     "ask": []

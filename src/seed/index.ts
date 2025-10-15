@@ -679,6 +679,39 @@ async function prepareDatabase(dbUri: string) {
     `)
     console.log(`   ✓ 删除了 merchant_role 字段（如果存在）`)
 
+    // 3. 删除已废弃的 Surcharges Collection 相关内容
+    // 从 Payments 统一管理所有支付后，Surcharges 已废弃
+    await client.query('DROP TABLE IF EXISTS surcharges CASCADE;')
+    console.log(`   ✓ 删除了 surcharges 表（已废弃）`)
+
+    await client.query('DROP TYPE IF EXISTS enum_surcharges_type CASCADE;')
+    await client.query('DROP TYPE IF EXISTS enum_surcharges_status CASCADE;')
+    console.log(`   ✓ 删除了 surcharges 相关枚举类型`)
+
+    // 4. 清理 orders_rels 中的 surcharges 关联（如果列存在）
+    const checkColumn = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'orders_rels' AND column_name = 'surcharges_id';
+    `)
+    if (checkColumn.rows.length > 0) {
+      await client.query(`
+        DELETE FROM orders_rels
+        WHERE surcharges_id IS NOT NULL;
+      `)
+      console.log(`   ✓ 清理了 orders 与 surcharges 的关联`)
+    }
+
+    // 5. 重建 Payments 表以避免字段迁移冲突
+    // 旧字段：amount_rent, amount_shipping, amount_total, refund_amount 等
+    // 新字段：type, amount, amount_detail_*, out_pay_no 等
+    await client.query('DROP TABLE IF EXISTS payments CASCADE;')
+    console.log(`   ✓ 删除了 payments 表（将重新创建）`)
+
+    await client.query('DROP TYPE IF EXISTS enum_payments_status CASCADE;')
+    await client.query('DROP TYPE IF EXISTS enum_payments_channel CASCADE;')
+    console.log(`   ✓ 删除了 payments 相关枚举类型（将重新创建）`)
+
   } catch (error) {
     console.warn('   ⚠️  预处理警告:', error)
     // 不抛出错误，因为某些情况下表可能不存在
@@ -694,7 +727,6 @@ async function cleanDatabase(payload: Payload) {
   const collections = [
     'audit-logs',
     'statements',
-    'surcharges',
     'payments',
     'logistics',
     'orders',

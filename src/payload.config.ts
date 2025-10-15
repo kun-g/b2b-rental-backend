@@ -19,7 +19,6 @@ import { ShippingTemplates } from './collections/ShippingTemplates'
 import { Orders } from './collections/Orders'
 import { Logistics } from './collections/Logistics'
 import { Payments } from './collections/Payments'
-import { Surcharges } from './collections/Surcharges'
 import { Statements } from './collections/Statements'
 import { AuditLogs } from './collections/AuditLogs'
 
@@ -82,7 +81,6 @@ export default buildConfig({
     Orders,
     Logistics,
     Payments,
-    Surcharges,
 
     // 对账管理
     Statements,
