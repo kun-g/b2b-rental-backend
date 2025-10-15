@@ -233,14 +233,128 @@ export const Users: CollectionConfig = {
     ],
     afterChange: [
       async ({ doc, req, operation, previousDoc }) => {
-        // 注意：不在这里自动维护 Account.users 字段
-        // Payload 的 relationship 字段会自动处理反向查询
-        // 如果需要显式维护，可以通过数据库触发器或定期同步任务来实现
-        // 避免在 hook 中相互更新导致性能问题
+        // 自动维护 Account.users 双向关联
+        const { payload } = req
 
-        // 仅记录日志用于调试（可选）
-        if (operation === 'create') {
-          console.log(`✓ User created: ${doc.id}, linked to Account: ${doc.account}`)
+        try {
+          if (operation === 'create') {
+            // 创建 User：将新 User 添加到 Account.users
+            const accountId = typeof doc.account === 'object' ? doc.account.id : doc.account
+
+            // 获取当前 Account
+            const account = await payload.findByID({
+              collection: 'accounts',
+              id: accountId,
+              depth: 0,
+            })
+
+            // 获取现有的 users 列表
+            const existingUsers = Array.isArray(account.users) ? account.users : []
+            const existingUserIds = existingUsers.map((u: any) =>
+              typeof u === 'object' ? u.id : u,
+            )
+
+            // 如果不存在则添加
+            if (!existingUserIds.includes(doc.id)) {
+              await payload.update({
+                collection: 'accounts',
+                id: accountId,
+                data: {
+                  users: [...existingUserIds, doc.id],
+                },
+                depth: 0,
+              })
+              console.log(`✓ User ${doc.id} 已添加到 Account ${accountId}.users`)
+            }
+          } else if (operation === 'update') {
+            // 更新 User：检查 account 是否改变
+            const oldAccountId =
+              typeof previousDoc?.account === 'object' ? previousDoc.account.id : previousDoc?.account
+            const newAccountId = typeof doc.account === 'object' ? doc.account.id : doc.account
+
+            if (oldAccountId && newAccountId && oldAccountId !== newAccountId) {
+              // Account 改变：从旧 Account 移除，添加到新 Account
+
+              // 1. 从旧 Account 移除
+              const oldAccount = await payload.findByID({
+                collection: 'accounts',
+                id: oldAccountId,
+                depth: 0,
+              })
+
+              if (oldAccount.users && Array.isArray(oldAccount.users)) {
+                const oldUserIds = oldAccount.users
+                  .map((u: any) => (typeof u === 'object' ? u.id : u))
+                  .filter((id: any) => id !== doc.id)
+
+                await payload.update({
+                  collection: 'accounts',
+                  id: oldAccountId,
+                  data: { users: oldUserIds },
+                  depth: 0,
+                })
+                console.log(`✓ User ${doc.id} 已从 Account ${oldAccountId}.users 移除`)
+              }
+
+              // 2. 添加到新 Account
+              const newAccount = await payload.findByID({
+                collection: 'accounts',
+                id: newAccountId,
+                depth: 0,
+              })
+
+              const newUsers = Array.isArray(newAccount.users) ? newAccount.users : []
+              const newUserIds = newUsers.map((u: any) => (typeof u === 'object' ? u.id : u))
+
+              if (!newUserIds.includes(doc.id)) {
+                await payload.update({
+                  collection: 'accounts',
+                  id: newAccountId,
+                  data: { users: [...newUserIds, doc.id] },
+                  depth: 0,
+                })
+                console.log(`✓ User ${doc.id} 已添加到 Account ${newAccountId}.users`)
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`❌ 维护 Account.users 失败:`, error)
+          // 不抛出错误，避免阻止 User 操作
+        }
+      },
+    ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        // 删除 User：从 Account.users 移除
+        const { payload } = req
+
+        try {
+          const accountId = typeof doc.account === 'object' ? doc.account.id : doc.account
+
+          if (accountId) {
+            const account = await payload.findByID({
+              collection: 'accounts',
+              id: accountId,
+              depth: 0,
+            })
+
+            if (account.users && Array.isArray(account.users)) {
+              const updatedUserIds = account.users
+                .map((u: any) => (typeof u === 'object' ? u.id : u))
+                .filter((id: any) => id !== doc.id)
+
+              await payload.update({
+                collection: 'accounts',
+                id: accountId,
+                data: { users: updatedUserIds },
+                depth: 0,
+              })
+              console.log(`✓ User ${doc.id} 已从 Account ${accountId}.users 移除（删除操作）`)
+            }
+          }
+        } catch (error) {
+          console.error(`❌ 维护 Account.users 失败（删除）:`, error)
+          // 不抛出错误
         }
       },
     ],

@@ -672,7 +672,49 @@ async function seed() {
     })
     console.log(`   ✓ ${frank.username} × ${merchantA.name}: 3000元`)
 
-    // 10. 创建订单场景
+    // 10. 创建多角色用户（演示一个账号多个身份）
+    console.log('\n🎭 创建多角色用户（演示一个账号拥有多个业务身份）...')
+
+    // 10.1 kun (平台管理员) 添加 customer 身份
+    const adminCustomerUser = await payload.create({
+      collection: 'users',
+      data: {
+        account: adminAccount.id,
+        user_type: 'customer',
+        role: 'customer',
+        status: 'active',
+      },
+    })
+    console.log(`   ✓ ${adminAccount.username}: platform_admin + customer (2个身份)`)
+
+    // 10.2 bob 添加 merchant_member 身份（商户A的成员）
+    const bobMerchantUser = await payload.create({
+      collection: 'users',
+      data: {
+        account: bobAccount.id,
+        user_type: 'merchant',
+        role: 'merchant_member',
+        merchant: merchantA.id,
+        status: 'active',
+      },
+    })
+    console.log(`   ✓ ${bobAccount.username}: customer + merchant_member (2个身份，可在商户A工作)`)
+
+    // 10.3 geek_admin (商户A管理员) 添加 customer 身份
+    const geekAdminCustomerUser = await payload.create({
+      collection: 'users',
+      data: {
+        account: merchantAdminAAccount.id,
+        user_type: 'customer',
+        role: 'customer',
+        status: 'active',
+      },
+    })
+    console.log(
+      `   ✓ ${merchantAdminAAccount.username}: merchant_admin + customer (2个身份，既管理商户又能租设备)`,
+    )
+
+    // 11. 创建订单场景
     await createOrderScenarios(payload, {
       users: { alice, bob, charlie },
       merchants: { merchantA, merchantB },
@@ -680,7 +722,7 @@ async function seed() {
       devices: { djiMini3_003, tent2Person_003, sonyA7M4_001 },
     })
 
-    // 11. 创建审计日志
+    // 12. 创建审计日志
     console.log('\n📝 创建审计日志...')
     await payload.create({
       collection: 'audit-logs',
@@ -721,11 +763,11 @@ async function seed() {
     })
     console.log(`   ✓ 创建了 3 条审计日志`)
 
-    // 12. 同步 Account ↔ User 双向关联
+    // 13. 同步 Account ↔ User 双向关联
     console.log('\n🔄 同步 Account ↔ User 双向关联...')
     await syncAccountUsers(payload)
 
-    // 13. 验证数据一致性
+    // 14. 验证数据一致性
     console.log('\n🔍 验证数据一致性...')
     const verifyResult = await verifyAccountUserSync(payload)
     if (!verifyResult.valid) {
@@ -736,7 +778,8 @@ async function seed() {
     console.log('\n✅ Seed 数据创建完成！')
     console.log('\n📊 数据统计:')
     console.log(`   Accounts: 12 个 (登录凭证)`)
-    console.log(`   Users: 12 个 (业务身份: 3个平台 + 3个商户 + 6个租方)`)
+    console.log(`   Users: 15 个 (业务身份: 4个平台 + 4个商户 + 7个租方)`)
+    console.log(`   多角色账号: 3 个 (kun、bob、geek_admin 各有 2 个身份)`)
     console.log(`   商户: 3 个 (2个已审核 + 1个待审核)`)
     console.log(`   类目: 7 个 (2个一级 + 5个二级)`)
     console.log(`   SKU: 7 个`)
