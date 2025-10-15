@@ -1,4 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
+import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * ReturnInfo Collection - 归还信息管理
@@ -13,13 +14,22 @@ export const ReturnInfo: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: (({ req: { user } }: AccessArgs<any>) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 通过 Account 获取关联的 User（业务身份）
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台角色可以查看所有归还信息
+      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        // 商户只能看到自己的归还信息
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能查看自己的归还信息
+      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         if (!merchantId) return false
         return {
           merchant: {
@@ -27,21 +37,35 @@ export const ReturnInfo: CollectionConfig = {
           },
         }
       }
+
       // 普通用户在下单时可以查看商户的归还信息
-      if (user?.role === 'customer') {
+      if (primaryUser.role === 'customer') {
         return true
       }
+
       return false
     }) as any,
-    create: ({ req: { user } }) => {
-      return user?.role === 'merchant_admin'
-    },
-    update: (({ req: { user } }: AccessArgs<any>) => {
-      if (user?.role === 'platform_admin') {
+    create: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有商户管理员可以创建归还信息
+      return await accountHasRole(payload, user.id, ['merchant_admin'])
+    }) as any,
+    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台管理员可以更新所有归还信息
+      if (primaryUser.role === 'platform_admin') {
         return true
       }
-      if (user?.role === 'merchant_admin') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户管理员只能更新自己的归还信息
+      if (primaryUser.role === 'merchant_admin') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         if (!merchantId) return false
         return {
           merchant: {
@@ -49,14 +73,24 @@ export const ReturnInfo: CollectionConfig = {
           },
         }
       }
+
       return false
     }) as any,
-    delete: (({ req: { user } }: AccessArgs<any>) => {
-      if (user?.role === 'platform_admin') {
+    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台管理员可以删除所有归还信息
+      if (primaryUser.role === 'platform_admin') {
         return true
       }
-      if (user?.role === 'merchant_admin') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户管理员只能删除自己的归还信息
+      if (primaryUser.role === 'merchant_admin') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         if (!merchantId) return false
         return {
           merchant: {
@@ -64,6 +98,7 @@ export const ReturnInfo: CollectionConfig = {
           },
         }
       }
+
       return false
     }) as any,
   },

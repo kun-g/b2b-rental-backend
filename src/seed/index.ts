@@ -738,6 +738,7 @@ async function cleanDatabase(payload: Payload) {
     'merchants',
     'categories',
     'users',
+    'accounts',
     'media',
   ] as const
 

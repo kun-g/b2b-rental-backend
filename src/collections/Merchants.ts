@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
+import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * Merchants Collection - 商户管理
@@ -12,30 +13,49 @@ export const Merchants: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    // 平台可见所有，商户仅可见自己的
-    read: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 通过 Account 获取关联的 User（业务身份）
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台角色可以查看所有商户
+      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能查看自己的商户信息
+      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         return {
           id: {
             equals: merchantId,
           },
         }
       }
+
       return false
-    },
-    create: ({ req: { user } }) => {
-      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
-    },
-    update: ({ req: { user } }) => {
-      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
-    },
-    delete: ({ req: { user } }) => {
-      return user?.role === 'platform_admin'
-    },
+    }) as any,
+    create: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有平台管理员和运营可以创建商户
+      return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+    }) as any,
+    update: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有平台管理员和运营可以更新商户
+      return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+    }) as any,
+    delete: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有平台管理员可以删除商户
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    }) as any,
   },
   fields: [
     {

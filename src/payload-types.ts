@@ -63,10 +63,11 @@ export type SupportedTimezones =
 
 export interface Config {
   auth: {
-    users: UserAuthOperations;
+    accounts: AccountAuthOperations;
   };
   blocks: {};
   collections: {
+    accounts: Account;
     users: User;
     categories: Category;
     merchants: Merchant;
@@ -87,6 +88,7 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    accounts: AccountsSelect<false> | AccountsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     merchants: MerchantsSelect<false> | MerchantsSelect<true>;
@@ -111,48 +113,61 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user: User & {
-    collection: 'users';
+  user: Account & {
+    collection: 'accounts';
   };
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
-export interface UserAuthOperations {
-  forgotPassword: {
-    username: string;
-  };
-  login: {
-    password: string;
-    username: string;
-  };
+export interface AccountAuthOperations {
+  forgotPassword:
+    | {
+        email: string;
+      }
+    | {
+        username: string;
+      };
+  login:
+    | {
+        email: string;
+        password: string;
+      }
+    | {
+        password: string;
+        username: string;
+      };
   registerFirstUser: {
     password: string;
     username: string;
+    email?: string;
   };
-  unlock: {
-    username: string;
-  };
+  unlock:
+    | {
+        email: string;
+      }
+    | {
+        username: string;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
+ * via the `definition` "accounts".
  */
-export interface User {
+export interface Account {
   id: number;
   /**
-   * 用于身份验证和接收验证码
+   * 用于登录的唯一账号名
    */
-  phone: string;
+  user_name: string;
   /**
-   * 决定用户在系统中的权限，只能由管理员设置
+   * 用于登录和接收验证码（与邮箱二选一）
    */
-  role: 'customer' | 'merchant_member' | 'merchant_admin' | 'platform_operator' | 'platform_admin' | 'platform_support';
+  phone?: string | null;
   /**
-   * 商户角色必填
+   * 禁用后无法登录
    */
-  merchant?: (number | null) | Merchant;
   status: 'active' | 'disabled';
   last_login_at?: string | null;
   /**
@@ -162,12 +177,9 @@ export interface User {
   updatedAt: string;
   createdAt: string;
   /**
-   * 用于身份验证和接收通知（非登录账号）
+   * 用于登录和接收通知（与手机号二选一）
    */
   email?: string | null;
-  /**
-   * 用于登录的唯一账号名
-   */
   username: string;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
@@ -183,6 +195,43 @@ export interface User {
       }[]
     | null;
   password?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  /**
+   * 关联的登录账号（一个账号可以有多个业务身份）
+   */
+  account: number | Account;
+  /**
+   * 决定用户的基本业务类型
+   */
+  user_type: 'customer' | 'merchant' | 'platform';
+  /**
+   * 决定用户在系统中的权限，只能由管理员设置
+   */
+  role: 'customer' | 'merchant_member' | 'merchant_admin' | 'platform_operator' | 'platform_admin' | 'platform_support';
+  /**
+   * 商户类型必填
+   */
+  merchant?: (number | null) | Merchant;
+  /**
+   * 禁用后该业务身份无法使用
+   */
+  status: 'active' | 'disabled';
+  /**
+   * 该业务身份最后被使用的时间
+   */
+  last_login_at?: string | null;
+  /**
+   * 内部备注
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -812,6 +861,10 @@ export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
+        relationTo: 'accounts';
+        value: number | Account;
+      } | null)
+    | ({
         relationTo: 'users';
         value: number | User;
       } | null)
@@ -869,8 +922,8 @@ export interface PayloadLockedDocument {
       } | null);
   globalSlug?: string | null;
   user: {
-    relationTo: 'users';
-    value: number | User;
+    relationTo: 'accounts';
+    value: number | Account;
   };
   updatedAt: string;
   createdAt: string;
@@ -882,8 +935,8 @@ export interface PayloadLockedDocument {
 export interface PayloadPreference {
   id: number;
   user: {
-    relationTo: 'users';
-    value: number | User;
+    relationTo: 'accounts';
+    value: number | Account;
   };
   key?: string | null;
   value?:
@@ -911,12 +964,11 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users_select".
+ * via the `definition` "accounts_select".
  */
-export interface UsersSelect<T extends boolean = true> {
+export interface AccountsSelect<T extends boolean = true> {
+  user_name?: T;
   phone?: T;
-  role?: T;
-  merchant?: T;
   status?: T;
   last_login_at?: T;
   notes?: T;
@@ -937,6 +989,21 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users_select".
+ */
+export interface UsersSelect<T extends boolean = true> {
+  account?: T;
+  user_type?: T;
+  role?: T;
+  merchant?: T;
+  status?: T;
+  last_login_at?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

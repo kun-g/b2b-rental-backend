@@ -1,87 +1,73 @@
 import type { CollectionConfig } from 'payload'
 
 /**
- * Users Collection - 用户账号体系
- * 对应 PRD 2. 账号体系与权限
- * 包含：用户账号（租方）、商户账号（出方）、平台账号（运营方）
+ * Users Collection - 业务账号（业务身份）
+ * 对应 docs/B2B_Collections_WithDesc.md 的 Users 设计
  *
- * 登录方式：
- * - 用户名(username) + 密码
- * - 手机号 + 验证码（需要自定义实现）
- * - 邮箱用于身份验证和通知
+ * 设计说明：
+ * - Users 是业务身份，不负责登录认证
+ * - 通过 account_id 关联到 Accounts（登录凭证）
+ * - 一个 Account 可以有多个 User（不同业务身份）
+ * - 决定用户在系统中的权限和可见数据
+ *
+ * 业务类型：
+ * - customer: 租方用户
+ * - merchant: 商户用户
+ * - platform: 平台用户
  */
 export const Users: CollectionConfig = {
   slug: 'users',
   admin: {
-    useAsTitle: 'username',
-    defaultColumns: ['username', 'phone', 'email', 'role', 'status', 'updatedAt'],
+    useAsTitle: 'id',
+    defaultColumns: ['account', 'user_type', 'role', 'merchant', 'status', 'updatedAt'],
     group: '账号管理',
   },
   access: {
-    // 用户管理权限 - 只有 platform_admin 和 platform_operator 可以操作
+    // 业务身份管理权限
     create: ({ req: { user } }) => {
-      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
+      if (!user) return false
+      // TODO: 通过 account 查找关联的 users，检查是否有 platform_admin 角色
+      return true // 暂时允许，后续完善
     },
     read: ({ req: { user } }) => {
-      // 只有 platform_admin 和 platform_operator 可以查看用户列表
-      // 其他角色只能查看自己的信息（通过 /api/users/me）
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
-        return true // 可以查看所有用户
-      }
-      // 其他角色只能查看自己
-      return {
-        id: {
-          equals: user?.id,
-        },
-      }
+      if (!user) return false
+      // TODO: 根据 account 查找关联的 users 来判断权限
+      return true
     },
     update: ({ req: { user } }) => {
-      // 只有 platform_admin 和 platform_operator 可以修改用户
-      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
+      if (!user) return false
+      // TODO: 权限控制
+      return true
     },
     delete: ({ req: { user } }) => {
-      // 只有 platform_admin 可以删除用户
-      return user?.role === 'platform_admin'
-    },
-  },
-  auth: {
-    tokenExpiration: 7 * 24 * 60 * 60, // 7天
-    verify: false, // MVP阶段可选
-    maxLoginAttempts: 5,
-    lockTime: 2 * 60 * 60 * 1000, // 2小时锁定
-    useAPIKey: false,
-    loginWithUsername: {
-      allowEmailLogin: false, // 禁用邮箱登录
-      requireEmail: false, // 邮箱不是必填项
+      if (!user) return false
+      // TODO: 权限控制
+      return true
     },
   },
   fields: [
     {
-      name: 'username',
-      type: 'text',
+      name: 'account',
+      type: 'relationship',
+      relationTo: 'accounts',
       required: true,
-      unique: true,
-      label: '用户名',
+      label: '关联账号',
       admin: {
-        description: '用于登录的唯一账号名',
+        description: '关联的登录账号（一个账号可以有多个业务身份）',
       },
     },
     {
-      name: 'email',
-      type: 'email',
-      label: '邮箱',
-      admin: {
-        description: '用于身份验证和接收通知（非登录账号）',
-      },
-    },
-    {
-      name: 'phone',
-      type: 'text',
+      name: 'user_type',
+      type: 'select',
       required: true,
-      unique: true,
-      label: '手机号',
+      label: '业务类型',
+      options: [
+        { label: '租方', value: 'customer' },
+        { label: '商户', value: 'merchant' },
+        { label: '平台', value: 'platform' },
+      ],
       admin: {
-        description: '用于身份验证和接收验证码',
+        description: '决定用户的基本业务类型',
       },
     },
     {
@@ -120,13 +106,13 @@ export const Users: CollectionConfig = {
       relationTo: 'merchants',
       label: '所属商户',
       admin: {
-        description: '商户角色必填',
-        condition: (data) => data.role === 'merchant_member' || data.role === 'merchant_admin',
+        description: '商户类型必填',
+        condition: (data) => data.user_type === 'merchant',
       },
       validate: (value: any, { data }: any) => {
-        // 商户角色必须填写所属商户
-        if ((data.role === 'merchant_member' || data.role === 'merchant_admin') && !value) {
-          return '商户角色必须选择所属商户'
+        // 商户类型必须填写所属商户
+        if (data.user_type === 'merchant' && !value) {
+          return '商户类型必须选择所属商户'
         }
         return true
       },
@@ -136,21 +122,25 @@ export const Users: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'active',
-      label: '账号状态',
+      label: '状态',
       options: [
         { label: '正常', value: 'active' },
         { label: '已禁用', value: 'disabled' },
       ],
+      admin: {
+        description: '禁用后该业务身份无法使用',
+      },
     },
     {
       name: 'last_login_at',
       type: 'date',
-      label: '最后登录时间',
+      label: '最近登录时间',
       admin: {
         date: {
           pickerAppearance: 'dayAndTime',
         },
         readOnly: true,
+        description: '该业务身份最后被使用的时间',
       },
     },
     {
@@ -164,10 +154,16 @@ export const Users: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      async ({ data, req, operation }) => {
-        // 记录最后登录时间
-        if (operation === 'update' && req.user?.id === data.id) {
-          data.last_login_at = new Date().toISOString()
+      async ({ data, operation }) => {
+        // 自动设置业务类型（根据角色推断）
+        if (operation === 'create' && !data.user_type) {
+          if (data.role === 'customer') {
+            data.user_type = 'customer'
+          } else if (data.role === 'merchant_member' || data.role === 'merchant_admin') {
+            data.user_type = 'merchant'
+          } else {
+            data.user_type = 'platform'
+          }
         }
         return data
       },

@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
+import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * MerchantSKUs Collection - 商户SKU（商户自建，归属类目）
@@ -12,54 +13,87 @@ export const MerchantSKUs: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    // 用户仅能看到授信商户的SKU，商户可见自己的，平台可见所有
-    read: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 通过 Account 获取关联的 User（业务身份）
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台角色可以查看所有 SKU
+      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能查看自己的 SKU
+      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         return {
           merchant: {
             equals: merchantId,
           },
         }
       }
+
       // 用户端需要根据授信关系过滤，MVP阶段先返回所有已上架的
       // TODO: 后续需要通过 UserMerchantCredit 查询授信关系
       return true
-    },
-    create: ({ req: { user } }) => {
-      return user?.role === 'merchant_admin' || user?.role === 'merchant_member'
-    },
-    update: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    }) as any,
+    create: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有商户管理员和成员可以创建 SKU
+      return await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])
+    }) as any,
+    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台角色可以更新所有 SKU
+      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能更新自己的 SKU
+      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         return {
           merchant: {
             equals: merchantId,
           },
         }
       }
+
       return false
-    },
-    delete: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin') {
+    }) as any,
+    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台管理员可以删除所有 SKU
+      if (primaryUser.role === 'platform_admin') {
         return true
       }
-      if (user?.role === 'merchant_admin') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户管理员只能删除自己的 SKU
+      if (primaryUser.role === 'merchant_admin') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         return {
           merchant: {
             equals: merchantId,
           },
         }
       }
+
       return false
-    },
+    }) as any,
   },
   fields: [
     {
@@ -219,11 +253,16 @@ export const MerchantSKUs: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, req, operation }) => {
+        // 获取当前操作者的 User（业务身份）
+        const primaryUser = req.user
+          ? await getPrimaryUserFromAccount(req.payload, req.user.id)
+          : null
+
         // 自动设置创建人/更新人
         if (operation === 'create') {
-          data.created_by = req.user?.id
+          data.created_by = primaryUser?.id
         }
-        data.updated_by = req.user?.id
+        data.updated_by = primaryUser?.id
 
         // 如果状态为已通过且is_listed为true，才真正上架
         if (data.listing_status === 'approved' && data.is_listed) {

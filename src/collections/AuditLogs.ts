@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * AuditLogs Collection - 审计日志
@@ -13,15 +14,20 @@ export const AuditLogs: CollectionConfig = {
     group: '系统管理',
   },
   access: {
-    read: ({ req: { user } }) => {
+    read: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
       // 仅平台可查看审计日志
-      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
-    },
+      return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+    }) as any,
     create: () => true, // 系统自动创建
     update: () => false, // 审计日志不可修改
-    delete: ({ req: { user } }) => {
-      return user?.role === 'platform_admin'
-    },
+    delete: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有平台管理员可以删除审计日志
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    }) as any,
   },
   fields: [
     {

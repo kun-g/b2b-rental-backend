@@ -1,5 +1,6 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
 import { calculateShippingFee } from '../utils/calculateShipping'
+import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * Orders Collection - 订单管理（核心业务流）
@@ -14,12 +15,22 @@ export const Orders: CollectionConfig = {
     group: '订单管理',
   },
   access: {
-    read: (({ req: { user } }: AccessArgs<any>) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 通过 Account 获取关联的 User（业务身份）
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台角色可以查看所有订单
+      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能查看自己商户的订单
+      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         if (!merchantId) return false
         return {
           merchant: {
@@ -27,26 +38,39 @@ export const Orders: CollectionConfig = {
           },
         }
       }
-      if (user?.role === 'customer') {
+
+      // 用户角色只能查看自己的订单
+      if (primaryUser.role === 'customer') {
         return {
           user: {
-            equals: user.id,
+            equals: primaryUser.id,
           },
         }
       }
+
       return false
     }) as any,
-    create: ({ req: { user } }) => {
-      // 只有用户可以创建订单
-      return user?.role === 'customer'
-    },
-    update: (({ req: { user } }: AccessArgs<any>) => {
-      // 用户、商户、平台都可以更新订单（不同状态不同权限）
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    create: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有 customer 角色可以创建订单
+      return await accountHasRole(payload, user.id, ['customer'])
+    }) as any,
+    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // 平台角色可以更新所有订单
+      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能更新自己商户的订单
+      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
         if (!merchantId) return false
         return {
           merchant: {
@@ -54,19 +78,24 @@ export const Orders: CollectionConfig = {
           },
         }
       }
-      if (user?.role === 'customer') {
+
+      // 用户角色只能更新自己的订单
+      if (primaryUser.role === 'customer') {
         return {
           user: {
-            equals: user.id,
+            equals: primaryUser.id,
           },
         }
       }
+
       return false
     }) as any,
-    delete: ({ req: { user } }) => {
+    delete: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
       // 只有平台管理员可以删除订单
-      return user?.role === 'platform_admin'
-    },
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    }) as any,
   },
   fields: [
     {

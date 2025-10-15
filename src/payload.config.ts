@@ -7,6 +7,7 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
+import { Accounts } from './collections/Accounts'
 import { Users } from './collections/users'
 import { Media } from './collections/Media'
 import { Categories } from './collections/Categories'
@@ -53,7 +54,7 @@ function getDatabaseAdapter() {
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
+    user: Accounts.slug, // 使用 Accounts 作为登录
     importMap: {
       baseDir: path.resolve(dirname),
     },
@@ -62,7 +63,8 @@ export default buildConfig({
   // Payload 3.x 运行在 Next.js 之上，这里的 cors/csrf 配置不会生效
   collections: [
     // 账号管理
-    Users,
+    Accounts, // 登录凭证
+    Users, // 业务身份
 
     // 平台管理
     Categories,
