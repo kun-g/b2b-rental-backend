@@ -1,6 +1,9 @@
 # 🧭 B2B 数据结构（Payload CMS 版，含中文说明）
 
 ## 更新说明
+- 10-15更新
+	- 增加account的collections，取消原先在uesr中的account类型定义;
+ 	- payments增加type，可了解每一笔支付订单是正常租赁，还是修改地址亦或是补差价；	
 - 10-14更新
 	- 结合当前设计，参考原设计对collections进行了更新
 https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
@@ -13,10 +16,11 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 系统共包含 13 个 Collections，按功能模块分组：
 
-### 1. 账号管理 (1个)
-- **Users** - 用户账号体系（包含租方、商户、平台三类角色）
+### 1. 账号管理 (2个)
+- **Accounts** - 用户账号
+- **Users** - 业务账号（包含租方、商户、平台三类角色）
 
-### 2. 商户管理 (4个)
+### 2. 商户管理 (5个)
 - **Merchants** - 商户信息（入驻、审核、资质）
 - **MerchantSKUs** - 商户SKU（商品上架、库存）
 - **Devices** - 设备管理（实体设备，绑定SN）
@@ -26,18 +30,13 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 ### 3. 授信管理 (1个)
 - **UserMerchantCredit** - 用户×商户授信关系（额度、状态）
 
-### 4. 订单管理 (4个)
+### 4. 订单管理 (3个)
 - **Orders** - 订单核心（状态机流转：NEW→PAID→TO_SHIP→SHIPPED→IN_RENT→RETURNING→RETURNED→COMPLETED）
 - **Logistics** - 物流信息（发货/回寄单号、签收时间）
 - **Payments** - 支付记录（租金、运费）
-- **Surcharges** - 附加费用（逾期、改址差额）
 
-### 5. 对账管理 (1个)
-- **Statements** - 对账单（订单完成后生成）
-
-### 6. 系统管理 (2个)
+### 5. 系统管理 (1个)
 - **AuditLogs** - 审计日志（敏感操作留痕）
-- **Media** - 媒体文件（图片、文件上传）
 
 ### 6. 平台管理 (1个)
 - **Categories** - 类目管理（平台维护，树形结构）
@@ -45,15 +44,26 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ## Collections说明
 
-### 1. Users（用户账号）
+### 1. Accounts（用户账号）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
-| id | 用户ID |
+| account_id | 用户的账号ID |
 | phone | 手机号 |
 | email | 邮箱 |
 | user_name| 用户名 |
-| account| 账号类型（merchant、customer、platform） |
+| password | 密码 |
+| status | 账号状态（active / disabled） |
+
+---
+
+### 2. Users（业务账号）
+
+| 字段名 | 中文说明 |
+|--------|-----------|
+| user_id | 用户在业务后台的ID |
+| account_id | 用户的账号ID |
+| user_type | 账号类型（merchant、customer、platform） |
 | role | 角色（customer / merchant_member / merchant_admin / platform_operator / platform_admin / platform_support） |
 | merchant | 所属商户（商户角色必填） |
 | last_login_at | 最近登录时间 |
@@ -61,7 +71,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ---
 
-### 2.  Merchants（商户信息）
+### 3.  Merchants（商户信息）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
@@ -73,7 +83,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ---
 
-### 3.  MerchantSKUs（商户SKU）
+### 4.  MerchantSKUs（商户SKU）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
@@ -87,7 +97,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ---
 
-### 4.  Devices（设备管理）
+### 5.  Devices（设备管理）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
@@ -99,7 +109,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ---
 
-### 5. ReturnInfo（归还信息）
+### 6. ReturnInfo（归还信息）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
@@ -108,20 +118,6 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | return_contact_phone | 回收联系人电话 |
 | return_address | 回收地址 |
 | status | 状态（active / in_active） |
-
----
-
-### 6.  UserMerchantCredit（用户商户授信）
-
-| 字段名 | 中文说明 |
-|--------|-----------|
-| user | 用户 |
-| merchant | 商户 |
-| credit_limit | 授信额度 |
-| used_credit | 已用额度 |
-| available_credit | 可用额度 |
-| status | 状态（enabled / disabled / frozen） |
-| credit_history | 授信调整记录（JSON） |
 
 ---
 
@@ -139,7 +135,21 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ---
 
-### 8.  Orders（订单管理）
+### 8.  UserMerchantCredit（用户商户授信）
+
+| 字段名 | 中文说明 |
+|--------|-----------|
+| user | 用户 |
+| merchant | 商户 |
+| credit_limit | 授信额度 |
+| used_credit | 已用额度 |
+| available_credit | 可用额度 |
+| status | 状态（enabled / disabled / frozen） |
+| credit_history | 授信调整记录（JSON） |
+
+---
+
+### 9.  Orders（订单管理）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
@@ -147,7 +157,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | transaction_no | 交易流水号 |
 | out_pay_no | 外部支付单号 |
 | logistics_id | 租赁平台的物流ID |
-| user | 下单用户 |
+| customer | 下单用户 |
 | merchant | 商户 |
 | merchant_sku | SKU |
 | device | 绑定设备 |
@@ -170,7 +180,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ---
 
-### 9.  Logistics（物流信息）
+### 10.  Logistics（物流信息）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
@@ -183,32 +193,19 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 
 ---
 
-### 10.  Payments（支付记录）
+### 11.  Payments（支付记录）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
 | transaction_no | 交易流水号 |
 | order_no | 租赁订单编号（自动生成） |
 | out_pay_no | 外部支付单号 |
-| amount_rent | 租金 |
-| amount_shipping | 运费 |
-| amount_total | 总金额 |
+| amount | 金额（正数为补收，负数为退款） |
+| type | 订单类型（rent / overdue / addr_up / addr_down） |
 | status | 支付状态（pending / paid / refunded / failed） |
 | pay_creat_at| 支付订单创建时间 |
 | paid_at | 支付时间 |
 | channel | 支付渠道（wechat / alipay / bank / other） |
-
----
-
-### 11.  Surcharges（附加费用）
-
-| 字段名 | 中文说明 |
-|--------|-----------|
-| transaction_no | 交易流水号 |
-| type | 费用类型（overdue / addr_up / addr_down） |
-| amount | 金额（正数=补收，负数=退款） |
-| status | 状态（pending / paid / refunded） |
-
 
 ---
 
@@ -227,6 +224,8 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | ip_address | 操作IP |
 | user_agent | 操作设备信息 |
 
+---
+
 ## 13.  Categories（类目管理）
 
 | 字段名 | 中文说明 |
@@ -241,7 +240,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 ## 以下为后续规划的内容
 ---
 
-### 14.  Statements（对账单）
+###  Statements（对账单）
 
 | 字段名 | 中文说明 |
 |--------|-----------|
@@ -255,3 +254,14 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | amount_total | 总金额 |
 | details_json | 明细（JSON） |
 | status | 状态（issued / confirmed / disputed） |
+
+---
+
+###  Surcharges（附加费用）
+
+| 字段名 | 中文说明 |
+|--------|-----------|
+| transaction_no | 交易流水号 |
+| type | 费用类型（overdue / addr_up / addr_down） |
+| amount | 金额（正数=补收，负数=退款） |
+| status | 状态（pending / paid / refunded） |
