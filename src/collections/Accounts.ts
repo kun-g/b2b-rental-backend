@@ -17,8 +17,8 @@ import type { CollectionConfig } from 'payload'
 export const Accounts: CollectionConfig = {
   slug: 'accounts',
   admin: {
-    useAsTitle: 'user_name',
-    defaultColumns: ['user_name', 'phone', 'email', 'status', 'updatedAt'],
+    useAsTitle: 'username',
+    defaultColumns: ['username', 'phone', 'email', 'status', 'updatedAt'],
     group: '账号管理',
   },
   access: {
@@ -61,16 +61,7 @@ export const Accounts: CollectionConfig = {
     },
   },
   fields: [
-    {
-      name: 'user_name',
-      type: 'text',
-      required: true,
-      unique: true,
-      label: '用户名',
-      admin: {
-        description: '用于登录的唯一账号名',
-      },
-    },
+    // username 字段由 loginWithUsername 自动创建，不需要手动定义
     {
       name: 'phone',
       type: 'text',

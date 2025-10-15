@@ -60,7 +60,7 @@ export const merchantsData = {
  */
 export const merchantAccountsData = {
   geekAdmin: {
-    user_name: 'geek_admin',
+    username: 'geek_admin',
     email: 'admin@geek-rental.com',
     phone: '13900001111',
     password: 'MerchantA123!',
@@ -68,7 +68,7 @@ export const merchantAccountsData = {
   },
 
   geekMember: {
-    user_name: 'geek_member',
+    username: 'geek_member',
     email: 'member@geek-rental.com',
     phone: '13900001112',
     password: 'MemberA123!',
@@ -76,7 +76,7 @@ export const merchantAccountsData = {
   },
 
   outdoorAdmin: {
-    user_name: 'outdoor_admin',
+    username: 'outdoor_admin',
     email: 'admin@outdoor-adventure.com',
     phone: '13900002222',
     password: 'MerchantB123!',

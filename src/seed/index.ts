@@ -102,7 +102,7 @@ async function seed() {
         account: adminAccount.id,
       },
     })
-    console.log(`   ✓ ${adminAccount.user_name} (${admin.role})`)
+    console.log(`   ✓ ${adminAccount.username} (${admin.role})`)
 
     // 1.3 创建平台运营 Account
     const operatorAccount = await payload.create({
@@ -118,7 +118,7 @@ async function seed() {
         account: operatorAccount.id,
       },
     })
-    console.log(`   ✓ ${operatorAccount.user_name} (${operator.role})`)
+    console.log(`   ✓ ${operatorAccount.username} (${operator.role})`)
 
     // 1.5 创建平台客服 Account
     const supportAccount = await payload.create({
@@ -134,7 +134,7 @@ async function seed() {
         account: supportAccount.id,
       },
     })
-    console.log(`   ✓ ${supportAccount.user_name} (${support.role})`)
+    console.log(`   ✓ ${supportAccount.username} (${support.role})`)
 
     // 2. 创建类目
     console.log('\n📂 创建类目...')
@@ -231,7 +231,7 @@ async function seed() {
         merchant: merchantA.id,
       },
     })
-    console.log(`   ✓ ${merchantAdminAAccount.user_name} (${merchantAdminA.role}) → ${merchantA.name}`)
+    console.log(`   ✓ ${merchantAdminAAccount.username} (${merchantAdminA.role}) → ${merchantA.name}`)
 
     // 4.2 商户A成员
     const merchantMemberAAccount = await payload.create({
@@ -246,7 +246,7 @@ async function seed() {
         merchant: merchantA.id,
       },
     })
-    console.log(`   ✓ ${merchantMemberAAccount.user_name} (${merchantMemberA.role}) → ${merchantA.name}`)
+    console.log(`   ✓ ${merchantMemberAAccount.username} (${merchantMemberA.role}) → ${merchantA.name}`)
 
     // 4.3 商户B管理员
     const merchantAdminBAccount = await payload.create({
@@ -261,7 +261,7 @@ async function seed() {
         merchant: merchantB.id,
       },
     })
-    console.log(`   ✓ ${merchantAdminBAccount.user_name} (${merchantAdminB.role}) → ${merchantB.name}`)
+    console.log(`   ✓ ${merchantAdminBAccount.username} (${merchantAdminB.role}) → ${merchantB.name}`)
 
     // 5. 创建运费模板
     console.log('\n🚚 创建运费模板...')
@@ -519,7 +519,7 @@ async function seed() {
         account: aliceAccount.id,
       },
     })
-    console.log(`   ✓ ${aliceAccount.user_name} (${aliceAccount.phone})`)
+    console.log(`   ✓ ${aliceAccount.username} (${aliceAccount.phone})`)
 
     // 8.2 Bob
     const bobAccount = await payload.create({
@@ -533,7 +533,7 @@ async function seed() {
         account: bobAccount.id,
       },
     })
-    console.log(`   ✓ ${bobAccount.user_name} (${bobAccount.phone})`)
+    console.log(`   ✓ ${bobAccount.username} (${bobAccount.phone})`)
 
     // 8.3 Charlie
     const charlieAccount = await payload.create({
@@ -547,7 +547,7 @@ async function seed() {
         account: charlieAccount.id,
       },
     })
-    console.log(`   ✓ ${charlieAccount.user_name} (${charlieAccount.phone})`)
+    console.log(`   ✓ ${charlieAccount.username} (${charlieAccount.phone})`)
 
     // 8.4 David - 无授信
     const davidAccount = await payload.create({
@@ -561,7 +561,7 @@ async function seed() {
         account: davidAccount.id,
       },
     })
-    console.log(`   ✓ ${davidAccount.user_name} (${davidAccount.phone}) - 无授信`)
+    console.log(`   ✓ ${davidAccount.username} (${davidAccount.phone}) - 无授信`)
 
     // 8.5 Eve
     const eveAccount = await payload.create({
@@ -575,7 +575,7 @@ async function seed() {
         account: eveAccount.id,
       },
     })
-    console.log(`   ✓ ${eveAccount.user_name} (${eveAccount.phone})`)
+    console.log(`   ✓ ${eveAccount.username} (${eveAccount.phone})`)
 
     // 8.6 Frank - KYC待认证
     const frankAccount = await payload.create({
@@ -589,7 +589,7 @@ async function seed() {
         account: frankAccount.id,
       },
     })
-    console.log(`   ✓ ${frankAccount.user_name} (${frankAccount.phone}) - KYC待认证`)
+    console.log(`   ✓ ${frankAccount.username} (${frankAccount.phone}) - KYC待认证`)
 
     // 9. 创建授信关系
     console.log('\n💳 创建授信关系...')
@@ -736,10 +736,10 @@ async function seed() {
     console.log(`   审计日志: 3 条`)
 
     console.log('\n🔑 登录信息:')
-    console.log(`   平台管理员: ${adminAccount.user_name} / ${accountsData.platformAdmin.password}`)
-    console.log(`   平台运营: ${operatorAccount.user_name} / ${accountsData.platformOperator.password}`)
-    console.log(`   商户A管理员: ${merchantAdminAAccount.user_name} / ${merchantAccountsData.geekAdmin.password}`)
-    console.log(`   商户B管理员: ${merchantAdminBAccount.user_name} / ${merchantAccountsData.outdoorAdmin.password}`)
+    console.log(`   平台管理员: ${adminAccount.username} / ${accountsData.platformAdmin.password}`)
+    console.log(`   平台运营: ${operatorAccount.username} / ${accountsData.platformOperator.password}`)
+    console.log(`   商户A管理员: ${merchantAdminAAccount.username} / ${merchantAccountsData.geekAdmin.password}`)
+    console.log(`   商户B管理员: ${merchantAdminBAccount.username} / ${merchantAccountsData.outdoorAdmin.password}`)
 
     console.log('\n📱 测试场景:')
     console.log(`   - Alice: 有商户A授信，看不到商户B`)

@@ -158,10 +158,6 @@ export interface AccountAuthOperations {
 export interface Account {
   id: number;
   /**
-   * 用于登录的唯一账号名
-   */
-  user_name: string;
-  /**
    * 用于登录和接收验证码（与邮箱二选一）
    */
   phone?: string | null;
@@ -967,7 +963,6 @@ export interface PayloadMigration {
  * via the `definition` "accounts_select".
  */
 export interface AccountsSelect<T extends boolean = true> {
-  user_name?: T;
   phone?: T;
   status?: T;
   last_login_at?: T;

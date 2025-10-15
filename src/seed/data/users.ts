@@ -8,7 +8,7 @@
 export const accountsData = {
   // ===== 平台端 =====
   platformAdmin: {
-    user_name: 'kun',
+    username: 'kun',
     email: 'admin@platform.com',
     phone: '13900000001',
     password: '123',
@@ -16,7 +16,7 @@ export const accountsData = {
   },
 
   platformOperator: {
-    user_name: 'operator',
+    username: 'operator',
     email: 'operator@platform.com',
     phone: '13900000002',
     password: 'Operator123!',
@@ -24,7 +24,7 @@ export const accountsData = {
   },
 
   platformSupport: {
-    user_name: 'support',
+    username: 'support',
     email: 'support@platform.com',
     phone: '13900000003',
     password: 'Support123!',
@@ -33,42 +33,42 @@ export const accountsData = {
 
   // ===== 租方端 =====
   alice: {
-    user_name: 'alice',
+    username: 'alice',
     phone: '13800138001',
     password: 'Alice123!',
     status: 'active' as const,
   },
 
   bob: {
-    user_name: 'bob',
+    username: 'bob',
     phone: '13800138002',
     password: 'Bob123!',
     status: 'active' as const,
   },
 
   charlie: {
-    user_name: 'charlie',
+    username: 'charlie',
     phone: '13800138003',
     password: 'Charlie123!',
     status: 'active' as const,
   },
 
   david: {
-    user_name: 'david',
+    username: 'david',
     phone: '13800138004',
     password: 'David123!',
     status: 'active' as const,
   },
 
   eve: {
-    user_name: 'eve',
+    username: 'eve',
     phone: '13800138005',
     password: 'Eve123!',
     status: 'active' as const,
   },
 
   frank: {
-    user_name: 'frank',
+    username: 'frank',
     phone: '13800138006',
     password: 'Frank123!',
     status: 'active' as const,

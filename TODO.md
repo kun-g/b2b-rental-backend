@@ -14,6 +14,9 @@
 - [x] 下单时根据地址和模板计算运费
 - [x] 不发地区拦截逻辑
 - [x] 实现 PAID → TO_SHIP 自动流转
+- [x] Accounts/Users 分离（支持一账号多业务身份）
+- [x] Payments 统一支付模型（整合 Surcharges 功能）
+- [x] 实现 Statements（对账单）和 Surcharges（附加费用）Collections
 
 ## 待完成 🚧
 
@@ -30,11 +33,13 @@
 - [ ] 添加 `shipping_date` - 实际发货时间
 - [x] ~~重命名 `shipping_fee` → `shipping_fee_snapshot`~~（保持现有命名）
 
-**Payments Collection 字段补充**（已完成部分）
-- [x] 添加 `out_pay_no` - 外部支付单号
-- [x] 添加 `type` - 支付类型（rent / overdue / addr_up / addr_down）
-- [ ] 添加 `pay_creat_at` - 支付订单创建时间
-- [x] 重构为统一支付模型（整合 Surcharges 功能）
+**Payments Collection 字段补充**
+- [x] 添加 `out_pay_no` - 外部支付单号（已完成，Payments.ts:58-64）
+- [x] 添加 `type` - 支付类型（rent / overdue / addr_up / addr_down）（已完成，Payments.ts:66-79）
+- [x] 添加 `amount` - 统一金额字段，支持正负（已完成，Payments.ts:81-88）
+- [x] 添加 `amount_detail` group - 金额明细（rent + shipping）（已完成，Payments.ts:90-111）
+- [ ] 添加 `pay_creat_at` - 支付订单创建时间（可选，评估是否使用 createdAt）
+- [x] 重构为统一支付模型（整合 Surcharges 功能）（已完成）
 
 **Logistics Collection 字段补充**
 - [ ] 添加 `logistics_type` - 物流类型（shipping / returning）
@@ -42,11 +47,12 @@
 
 **设计文档同步**
 - [ ] 更新 `docs/B2B_Collections_WithDesc.md`
-  - 标记 Statements 和 Surcharges 为"已实现"
-  - 说明 Accounts/Users 合并的设计决策
-  - 更新 Payments 字段设计（统一支付模型）
-  - 更新 Orders 归还地址字段
-  - 更新 Logistics 字段说明
+  - [x] Statements 已实现（src/collections/Statements.ts）
+  - [x] Surcharges 功能已整合到 Payments.type 中
+  - [x] Accounts/Users 已分离实现（src/collections/Accounts.ts + users.ts）
+  - [x] Payments 已重构为统一支付模型（type + amount + amount_detail）
+  - [ ] 补充 Orders 归还地址字段说明（待实现后更新）
+  - [ ] 补充 Logistics logistics_type 字段说明（待实现后更新）
 
 #### 2. 业务逻辑补充
 - [ ] **授信管理**（优先级高，影响下单流程）
@@ -99,17 +105,19 @@
 - [ ] **Orders ↔ Logistics 关联设计**
   - 当前：双向关联（Orders.logistics + Logistics.order），可能导致不一致
   - 建议：评估是否只保留单向关联（Logistics → Order）
-- [ ] **Payments ↔ Surcharges 合并评估**
-  - 当前：已将 Surcharges 功能整合到 Payments.type 中
-  - 待定：评估是否移除 Surcharges Collection
+- [x] **Payments ↔ Surcharges 合并** ✅ 已完成
+  - Surcharges 功能已整合到 Payments.type 中
+  - 统一支付模型：通过 type 区分（rent/overdue/addr_up/addr_down）
+  - Surcharges Collection 保留（可选移除）
 - [ ] **Logistics 发货/归还拆分评估**
   - 当前：一条记录包含发货和归还信息（ship_no + return_ship_no）
   - 备选：拆分为两条记录，通过 logistics_type 区分
   - 待定：根据实际业务场景决策
-- [ ] **Accounts/Users 分离评估**
-  - 当前：合并在 Users Collection（简化 Payload auth 配置）
-  - 备选：分离为两个 Collection（支持一账号多身份）
-  - 建议：MVP 保持现状，后续根据需求调整
+- [x] **Accounts/Users 分离** ✅ 已完成
+  - 已分离为两个 Collection（Accounts 负责登录，Users 负责业务身份）
+  - Accounts: 登录凭证（phone/email/user_name + password）
+  - Users: 业务身份（user_type + role + merchant）
+  - 支持一个 Account 关联多个 User（不同业务身份）
 
 ### 优先级 P2（可选）
 
