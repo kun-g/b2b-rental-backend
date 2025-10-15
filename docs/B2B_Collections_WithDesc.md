@@ -3,7 +3,8 @@
 ## 更新说明
 - 10-15更新
 	- 增加account的collections，取消原先在uesr中的account类型定义;
- 	- payments增加type，可了解每一笔支付订单是正常租赁，还是修改地址亦或是补差价；	
+ 	- payments增加type，可了解每一笔支付订单是正常租赁，还是修改地址亦或是补差价；
+	- account增加users字段，与账号类型进行关联 
 - 10-14更新
 	- 结合当前设计，参考原设计对collections进行了更新
 https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
@@ -53,6 +54,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | email | 邮箱 |
 | user_name| 用户名 |
 | password | 密码 |
+| users | 账号拥有的业务类型列表 |
 | status | 账号状态（active / disabled） |
 
 ---
