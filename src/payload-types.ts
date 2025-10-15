@@ -162,6 +162,10 @@ export interface Account {
    */
   phone?: string | null;
   /**
+   * 该账号关联的所有业务身份（一个账号可以有多个身份）
+   */
+  users?: (number | User)[] | null;
+  /**
    * 禁用后无法登录
    */
   status: 'active' | 'disabled';
@@ -253,6 +257,10 @@ export interface Merchant {
    * 上传营业执照扫描件
    */
   business_license?: (number | null) | Media;
+  /**
+   * 商户的办公地址
+   */
+  address?: string | null;
   status: 'pending' | 'approved' | 'rejected' | 'disabled';
   /**
    * 平台生成的唯一邀请码
@@ -495,7 +503,15 @@ export interface Order {
    * 自动生成的唯一订单号
    */
   order_no: string;
-  user: number | User;
+  /**
+   * 关联的交易流水号
+   */
+  transaction_no?: string | null;
+  /**
+   * 第三方支付平台返回的支付单号
+   */
+  out_pay_no?: string | null;
+  customer: number | User;
   /**
    * 自动从 SKU 中获取
    */
@@ -509,8 +525,16 @@ export interface Order {
    * 对应PRD状态机流转
    */
   status: 'NEW' | 'PAID' | 'TO_SHIP' | 'SHIPPED' | 'IN_RENT' | 'RETURNING' | 'RETURNED' | 'COMPLETED' | 'CANCELED';
+  /**
+   * 商户实际发货的时间
+   */
+  shipping_date?: string | null;
   rent_start_date: string;
   rent_end_date: string;
+  /**
+   * 订单创建的时间
+   */
+  order_creat_at?: string | null;
   /**
    * 自动计算：rent_end_date - rent_start_date
    */
@@ -534,7 +558,7 @@ export interface Order {
   /**
    * 下单时计算的运费(自动计算)
    */
-  shipping_fee?: number | null;
+  shipping_fee_snapshot?: number | null;
   /**
    * 订单使用的运费模板（自动从 SKU 获取）
    */
@@ -552,6 +576,17 @@ export interface Order {
     address: string;
     region_code?: string | null;
   };
+  /**
+   * 用户归还设备的地址（自动从商户归还信息中获取）
+   */
+  return_address?: {
+    contact_name?: string | null;
+    contact_phone?: string | null;
+    province?: string | null;
+    city?: string | null;
+    district?: string | null;
+    address?: string | null;
+  };
   logistics?: (number | null) | Logistic;
   /**
    * 包含租赁支付、逾期补收、改址差额等所有支付
@@ -567,7 +602,15 @@ export interface Order {
   /**
    * 租金 + 运费 + 逾期
    */
-  total_amount?: number | null;
+  order_total_amount?: number | null;
+  /**
+   * 发货时的物流单号
+   */
+  shipping_no?: string | null;
+  /**
+   * 用户归还设备时的物流单号
+   */
+  return_no?: string | null;
   notes?: string | null;
   status_history?:
     | {
@@ -587,21 +630,35 @@ export interface Order {
  */
 export interface Logistic {
   id: number;
+  /**
+   * 系统生成的物流记录唯一标识
+   */
+  logistics_id: string;
+  /**
+   * 关联的订单编号
+   */
+  order_no: string;
+  /**
+   * 关联订单对象（用于查询）
+   */
   order: number | Order;
-  ship_no?: string | null;
   /**
    * 如：顺丰、德邦
    */
   carrier?: string | null;
+  /**
+   * 承运商提供的物流单号
+   */
+  logistics_no?: string | null;
   ship_at?: string | null;
+  /**
+   * 区分是发货还是归还
+   */
+  logistics_type: 'shipping' | 'return';
   /**
    * 物流API回传或商户确认
    */
   sign_at?: string | null;
-  return_ship_no?: string | null;
-  return_carrier?: string | null;
-  return_ship_at?: string | null;
-  return_sign_at?: string | null;
   tracking_events?:
     | {
         time: string;
@@ -619,11 +676,18 @@ export interface Logistic {
  */
 export interface Payment {
   id: number;
-  order: number | Order;
   /**
    * 系统生成的唯一交易号
    */
   transaction_no: string;
+  /**
+   * 关联的订单编号
+   */
+  order_no: string;
+  /**
+   * 关联订单对象（用于查询）
+   */
+  order: number | Order;
   /**
    * 微信/支付宝等第三方支付平台返回的支付单号
    */
@@ -631,7 +695,7 @@ export interface Payment {
   /**
    * 区分支付用途（统一管理所有支付场景）
    */
-  type: 'rent' | 'overdue' | 'addr_up' | 'addr_down';
+  type: 'rent' | 'rent_canceled' | 'overdue' | 'addr_up' | 'addr_down';
   /**
    * 正数表示应收款，负数表示退款
    */
@@ -647,6 +711,10 @@ export interface Payment {
     shipping?: number | null;
   };
   status: 'pending' | 'paid' | 'refunded' | 'failed';
+  /**
+   * 支付订单创建的时间
+   */
+  pay_creat_at?: string | null;
   paid_at?: string | null;
   channel?: ('wechat' | 'alipay' | 'bank' | 'other') | null;
   /**
@@ -964,6 +1032,7 @@ export interface PayloadMigration {
  */
 export interface AccountsSelect<T extends boolean = true> {
   phone?: T;
+  users?: T;
   status?: T;
   last_login_at?: T;
   notes?: T;
@@ -1034,6 +1103,7 @@ export interface MerchantsSelect<T extends boolean = true> {
         bank_name?: T;
       };
   business_license?: T;
+  address?: T;
   status?: T;
   invitation_code?: T;
   invited_by?: T;
@@ -1188,19 +1258,23 @@ export interface UserMerchantCreditSelect<T extends boolean = true> {
  */
 export interface OrdersSelect<T extends boolean = true> {
   order_no?: T;
-  user?: T;
+  transaction_no?: T;
+  out_pay_no?: T;
+  customer?: T;
   merchant?: T;
   merchant_sku?: T;
   device?: T;
   status?: T;
+  shipping_date?: T;
   rent_start_date?: T;
   rent_end_date?: T;
+  order_creat_at?: T;
   rent_days?: T;
   actual_start_date?: T;
   timezone?: T;
   daily_fee_snapshot?: T;
   device_value_snapshot?: T;
-  shipping_fee?: T;
+  shipping_fee_snapshot?: T;
   shipping_template_id?: T;
   credit_hold_amount?: T;
   shipping_address?:
@@ -1214,13 +1288,25 @@ export interface OrdersSelect<T extends boolean = true> {
         address?: T;
         region_code?: T;
       };
+  return_address?:
+    | T
+    | {
+        contact_name?: T;
+        contact_phone?: T;
+        province?: T;
+        city?: T;
+        district?: T;
+        address?: T;
+      };
   logistics?: T;
   payments?: T;
   statement?: T;
   is_overdue?: T;
   overdue_days?: T;
   overdue_amount?: T;
-  total_amount?: T;
+  order_total_amount?: T;
+  shipping_no?: T;
+  return_no?: T;
   notes?: T;
   status_history?:
     | T
@@ -1239,15 +1325,14 @@ export interface OrdersSelect<T extends boolean = true> {
  * via the `definition` "logistics_select".
  */
 export interface LogisticsSelect<T extends boolean = true> {
+  logistics_id?: T;
+  order_no?: T;
   order?: T;
-  ship_no?: T;
   carrier?: T;
+  logistics_no?: T;
   ship_at?: T;
+  logistics_type?: T;
   sign_at?: T;
-  return_ship_no?: T;
-  return_carrier?: T;
-  return_ship_at?: T;
-  return_sign_at?: T;
   tracking_events?:
     | T
     | {
@@ -1264,8 +1349,9 @@ export interface LogisticsSelect<T extends boolean = true> {
  * via the `definition` "payments_select".
  */
 export interface PaymentsSelect<T extends boolean = true> {
-  order?: T;
   transaction_no?: T;
+  order_no?: T;
+  order?: T;
   out_pay_no?: T;
   type?: T;
   amount?: T;
@@ -1276,6 +1362,7 @@ export interface PaymentsSelect<T extends boolean = true> {
         shipping?: T;
       };
   status?: T;
+  pay_creat_at?: T;
   paid_at?: T;
   channel?: T;
   notes?: T;

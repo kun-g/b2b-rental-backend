@@ -38,13 +38,6 @@ export const Payments: CollectionConfig = {
   },
   fields: [
     {
-      name: 'order',
-      type: 'relationship',
-      relationTo: 'orders',
-      required: true,
-      label: '关联订单',
-    },
-    {
       name: 'transaction_no',
       type: 'text',
       required: true,
@@ -52,6 +45,26 @@ export const Payments: CollectionConfig = {
       label: '交易流水号',
       admin: {
         description: '系统生成的唯一交易号',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'order_no',
+      type: 'text',
+      required: true,
+      label: '租赁订单编号',
+      admin: {
+        description: '关联的订单编号',
+      },
+    },
+    {
+      name: 'order',
+      type: 'relationship',
+      relationTo: 'orders',
+      required: true,
+      label: '关联订单',
+      admin: {
+        description: '关联订单对象（用于查询）',
       },
     },
     {
@@ -69,6 +82,7 @@ export const Payments: CollectionConfig = {
       label: '支付类型',
       options: [
         { label: '租赁支付（租金+运费）', value: 'rent' },
+        { label: '租赁取消退款', value: 'rent_canceled' },
         { label: '逾期补收', value: 'overdue' },
         { label: '改址补收（运费增加）', value: 'addr_up' },
         { label: '改址退款（运费减少）', value: 'addr_down' },
@@ -123,6 +137,18 @@ export const Payments: CollectionConfig = {
       ],
     },
     {
+      name: 'pay_creat_at',
+      type: 'date',
+      label: '支付订单创建时间',
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        description: '支付订单创建的时间',
+        readOnly: true,
+      },
+    },
+    {
       name: 'paid_at',
       type: 'date',
       label: '支付时间',
@@ -155,16 +181,20 @@ export const Payments: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, operation }) => {
-        // 创建支付记录时生成交易流水号
-        if (operation === 'create' && !data.transaction_no) {
-          const typePrefix = {
-            rent: 'RENT',
-            overdue: 'OVER',
-            addr_up: 'ADDU',
-            addr_down: 'ADDD',
-          }[data.type || 'rent']
+        // 创建支付记录时生成交易流水号和创建时间
+        if (operation === 'create') {
+          if (!data.transaction_no) {
+            const typePrefix = {
+              rent: 'RENT',
+              rent_canceled: 'CANC',
+              overdue: 'OVER',
+              addr_up: 'ADDU',
+              addr_down: 'ADDD',
+            }[data.type || 'rent']
 
-          data.transaction_no = `${typePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+            data.transaction_no = `${typePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+          }
+          data.pay_creat_at = new Date().toISOString()
         }
 
         return data

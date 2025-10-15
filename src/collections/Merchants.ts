@@ -123,6 +123,14 @@ export const Merchants: CollectionConfig = {
       },
     },
     {
+      name: 'address',
+      type: 'textarea',
+      label: '商户办公地址',
+      admin: {
+        description: '商户的办公地址',
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       required: true,

@@ -27,7 +27,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202410120001',
-      user: users.alice.id,
+      customer: users.alice.id,
       merchant: merchants.merchantA.id,
       merchant_sku: skus.djiMini3.id,
       status: 'NEW',
@@ -55,7 +55,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202410120002',
-      user: users.bob.id,
+      customer: users.bob.id,
       merchant: merchants.merchantA.id,
       merchant_sku: skus.djiMini3.id,
       status: 'TO_SHIP',
@@ -81,6 +81,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order2.order_no,
       order: order2.id,
       transaction_no: 'PAY202410120002',
       type: 'rent',
@@ -101,7 +102,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202410120003',
-      user: users.bob.id,
+      customer: users.bob.id,
       merchant: merchants.merchantB.id,
       merchant_sku: skus.tent2Person.id,
       status: 'TO_SHIP',
@@ -127,6 +128,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order3.order_no,
       order: order3.id,
       transaction_no: 'PAY202410120003',
       type: 'rent',
@@ -145,6 +147,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order3.order_no,
       order: order3.id,
       transaction_no: 'PAY202410120003-ADDR1',
       type: 'addr_up',
@@ -162,7 +165,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202410120004',
-      user: users.alice.id,
+      customer: users.alice.id,
       merchant: merchants.merchantA.id,
       merchant_sku: skus.djiMini3.id,
       status: 'TO_SHIP',
@@ -187,6 +190,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order4.order_no,
       order: order4.id,
       transaction_no: 'PAY202410120004',
       type: 'rent',
@@ -207,7 +211,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202410120005',
-      user: users.bob.id,
+      customer: users.bob.id,
       merchant: merchants.merchantA.id,
       merchant_sku: skus.djiMini3.id,
       device: devices.djiMini3_003.id, // 绑定设备
@@ -234,6 +238,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order5.order_no,
       order: order5.id,
       transaction_no: 'PAY202410120005',
       type: 'rent',
@@ -252,10 +257,13 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'logistics',
     data: {
+      logistics_id: 'LOG202410120005',
+      order_no: order5.order_no,
       order: order5.id,
-      ship_no: 'SF1234567890',
       carrier: '顺丰速运',
-      ship_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1天前发货
+      logistics_no: 'SF1234567890',
+      ship_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      logistics_type: 'shipping',
       tracking_events: [
         {
           time: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
@@ -275,7 +283,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202409100006',
-      user: users.bob.id,
+      customer: users.bob.id,
       merchant: merchants.merchantB.id,
       merchant_sku: skus.tent2Person.id,
       device: devices.tent2Person_003.id,
@@ -302,6 +310,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order6.order_no,
       order: order6.id,
       transaction_no: 'PAY202409100006',
       type: 'rent',
@@ -316,14 +325,18 @@ export async function createOrderScenarios(
     },
   })
 
+  // 发货物流
   await payload.create({
     collection: 'logistics',
     data: {
+      logistics_id: 'LOG202409100006',
+      order_no: order6.order_no,
       order: order6.id,
-      ship_no: 'YTO9876543210',
       carrier: '圆通速递',
+      logistics_no: 'YTO9876543210',
       ship_at: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000).toISOString(),
       sign_at: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString(), // 已签收
+      logistics_type: 'shipping',
       tracking_events: [],
     },
   })
@@ -334,7 +347,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202409200007',
-      user: users.alice.id,
+      customer: users.alice.id,
       merchant: merchants.merchantA.id,
       merchant_sku: skus.djiMini3.id,
       device: devices.djiMini3_003.id, // 注意：这里复用设备，实际场景中不会
@@ -361,6 +374,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order7.order_no,
       order: order7.id,
       transaction_no: 'PAY202409200007',
       type: 'rent',
@@ -375,15 +389,33 @@ export async function createOrderScenarios(
     },
   })
 
+  // 发货物流
   await payload.create({
     collection: 'logistics',
     data: {
+      logistics_id: 'LOG202409200007',
+      order_no: order7.order_no,
       order: order7.id,
-      ship_no: 'SF1111111111',
       carrier: '顺丰速运',
+      logistics_no: 'SF1111111111',
       ship_at: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString(),
       sign_at: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
-      return_ship_no: 'SF2222222222', // 回寄单号
+      logistics_type: 'shipping',
+      tracking_events: [],
+    },
+  })
+
+  // 归还物流
+  await payload.create({
+    collection: 'logistics',
+    data: {
+      logistics_id: 'LOG202409200007R',
+      order_no: order7.order_no,
+      order: order7.id,
+      carrier: '顺丰速运',
+      logistics_no: 'SF2222222222',
+      ship_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      logistics_type: 'return',
       tracking_events: [],
     },
   })
@@ -394,7 +426,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202409050008',
-      user: users.bob.id,
+      customer: users.bob.id,
       merchant: merchants.merchantB.id,
       merchant_sku: skus.tent2Person.id,
       device: devices.tent2Person_003.id,
@@ -421,6 +453,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order8.order_no,
       order: order8.id,
       transaction_no: 'PAY202409050008',
       type: 'rent',
@@ -435,16 +468,34 @@ export async function createOrderScenarios(
     },
   })
 
+  // 发货物流
   await payload.create({
     collection: 'logistics',
     data: {
+      logistics_id: 'LOG202409050008',
+      order_no: order8.order_no,
       order: order8.id,
-      ship_no: 'YTO1111111111',
       carrier: '圆通速递',
+      logistics_no: 'YTO1111111111',
       ship_at: new Date(Date.now() - 38 * 24 * 60 * 60 * 1000).toISOString(),
       sign_at: new Date(Date.now() - 34 * 24 * 60 * 60 * 1000).toISOString(),
-      return_ship_no: 'YTO2222222222',
-      return_sign_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 商户已签收
+      logistics_type: 'shipping',
+      tracking_events: [],
+    },
+  })
+
+  // 归还物流
+  await payload.create({
+    collection: 'logistics',
+    data: {
+      logistics_id: 'LOG202409050008R',
+      order_no: order8.order_no,
+      order: order8.id,
+      carrier: '圆通速递',
+      logistics_no: 'YTO2222222222',
+      ship_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      sign_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 商户已签收
+      logistics_type: 'return',
       tracking_events: [],
     },
   })
@@ -455,7 +506,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202408100009',
-      user: users.alice.id,
+      customer: users.alice.id,
       merchant: merchants.merchantA.id,
       merchant_sku: skus.djiMini3.id,
       device: devices.djiMini3_003.id,
@@ -483,6 +534,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order9.order_no,
       order: order9.id,
       transaction_no: 'PAY202408100009',
       type: 'rent',
@@ -501,6 +553,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order9.order_no,
       order: order9.id,
       transaction_no: 'PAY202408100009-OVERDUE',
       type: 'overdue',
@@ -512,16 +565,34 @@ export async function createOrderScenarios(
     },
   })
 
+  // 发货物流
   await payload.create({
     collection: 'logistics',
     data: {
+      logistics_id: 'LOG202408100009',
+      order_no: order9.order_no,
       order: order9.id,
-      ship_no: 'SF9999999999',
       carrier: '顺丰速运',
+      logistics_no: 'SF9999999999',
       ship_at: new Date(Date.now() - 63 * 24 * 60 * 60 * 1000).toISOString(),
       sign_at: new Date(Date.now() - 59 * 24 * 60 * 60 * 1000).toISOString(),
-      return_ship_no: 'SF8888888888',
-      return_sign_at: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+      logistics_type: 'shipping',
+      tracking_events: [],
+    },
+  })
+
+  // 归还物流
+  await payload.create({
+    collection: 'logistics',
+    data: {
+      logistics_id: 'LOG202408100009R',
+      order_no: order9.order_no,
+      order: order9.id,
+      carrier: '顺丰速运',
+      logistics_no: 'SF8888888888',
+      ship_at: new Date(Date.now() - 52 * 24 * 60 * 60 * 1000).toISOString(),
+      sign_at: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+      logistics_type: 'return',
       tracking_events: [],
     },
   })
@@ -554,7 +625,7 @@ export async function createOrderScenarios(
     collection: 'orders',
     data: {
       order_no: 'ORD202410050010',
-      user: users.bob.id,
+      customer: users.bob.id,
       merchant: merchants.merchantB.id,
       merchant_sku: skus.tent2Person.id,
       status: 'CANCELED',
@@ -580,6 +651,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order10.order_no,
       order: order10.id,
       transaction_no: 'PAY202410050010',
       type: 'rent',
@@ -598,6 +670,7 @@ export async function createOrderScenarios(
   await payload.create({
     collection: 'payments',
     data: {
+      order_no: order10.order_no,
       order: order10.id,
       transaction_no: 'PAY202410050010-REFUND',
       type: 'rent',

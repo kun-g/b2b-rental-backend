@@ -120,6 +120,17 @@ export const Accounts: CollectionConfig = {
       },
     },
     {
+      name: 'users',
+      type: 'relationship',
+      relationTo: 'users',
+      hasMany: true,
+      label: '关联的业务身份',
+      admin: {
+        description: '该账号关联的所有业务身份（一个账号可以有多个身份）',
+        readOnly: true, // 只读，通过 User 创建时自动关联
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       required: true,

@@ -11,7 +11,7 @@ export const Orders: CollectionConfig = {
   slug: 'orders',
   admin: {
     useAsTitle: 'order_no',
-    defaultColumns: ['order_no', 'user', 'merchant', 'merchant_sku', 'status', 'createdAt'],
+    defaultColumns: ['order_no', 'customer', 'merchant', 'merchant_sku', 'status', 'createdAt'],
     group: '订单管理',
   },
   access: {
@@ -42,7 +42,7 @@ export const Orders: CollectionConfig = {
       // 用户角色只能查看自己的订单
       if (primaryUser.role === 'customer') {
         return {
-          user: {
+          customer: {
             equals: primaryUser.id,
           },
         }
@@ -82,7 +82,7 @@ export const Orders: CollectionConfig = {
       // 用户角色只能更新自己的订单
       if (primaryUser.role === 'customer') {
         return {
-          user: {
+          customer: {
             equals: primaryUser.id,
           },
         }
@@ -110,7 +110,23 @@ export const Orders: CollectionConfig = {
       },
     },
     {
-      name: 'user',
+      name: 'transaction_no',
+      type: 'text',
+      label: '交易流水号',
+      admin: {
+        description: '关联的交易流水号',
+      },
+    },
+    {
+      name: 'out_pay_no',
+      type: 'text',
+      label: '外部支付单号',
+      admin: {
+        description: '第三方支付平台返回的支付单号',
+      },
+    },
+    {
+      name: 'customer',
       type: 'relationship',
       relationTo: 'users',
       required: true,
@@ -164,6 +180,17 @@ export const Orders: CollectionConfig = {
       },
     },
     {
+      name: 'shipping_date',
+      type: 'date',
+      label: '发货时间',
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        description: '商户实际发货的时间',
+      },
+    },
+    {
       name: 'rent_start_date',
       type: 'date',
       required: true,
@@ -183,6 +210,18 @@ export const Orders: CollectionConfig = {
         date: {
           pickerAppearance: 'dayOnly',
         },
+      },
+    },
+    {
+      name: 'order_creat_at',
+      type: 'date',
+      label: '租赁订单创建时间',
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        description: '订单创建的时间',
+        readOnly: true,
       },
     },
     {
@@ -234,9 +273,9 @@ export const Orders: CollectionConfig = {
       },
     },
     {
-      name: 'shipping_fee',
+      name: 'shipping_fee_snapshot',
       type: 'number',
-      label: '运费（元）',
+      label: '运费快照（元）',
       admin: {
         description: '下单时计算的运费(自动计算)',
         readOnly: true,
@@ -310,6 +349,46 @@ export const Orders: CollectionConfig = {
       ],
     },
     {
+      name: 'return_address',
+      type: 'group',
+      label: '归还地址',
+      admin: {
+        description: '用户归还设备的地址（自动从商户归还信息中获取）',
+      },
+      fields: [
+        {
+          name: 'contact_name',
+          type: 'text',
+          label: '归还联系人',
+        },
+        {
+          name: 'contact_phone',
+          type: 'text',
+          label: '联系电话',
+        },
+        {
+          name: 'province',
+          type: 'text',
+          label: '省',
+        },
+        {
+          name: 'city',
+          type: 'text',
+          label: '市',
+        },
+        {
+          name: 'district',
+          type: 'text',
+          label: '区',
+        },
+        {
+          name: 'address',
+          type: 'text',
+          label: '详细地址',
+        },
+      ],
+    },
+    {
       name: 'logistics',
       type: 'relationship',
       relationTo: 'logistics',
@@ -360,12 +439,28 @@ export const Orders: CollectionConfig = {
       },
     },
     {
-      name: 'total_amount',
+      name: 'order_total_amount',
       type: 'number',
       label: '订单总额（元）',
       admin: {
         description: '租金 + 运费 + 逾期',
         readOnly: true,
+      },
+    },
+    {
+      name: 'shipping_no',
+      type: 'text',
+      label: '发货快递单号',
+      admin: {
+        description: '发货时的物流单号',
+      },
+    },
+    {
+      name: 'return_no',
+      type: 'text',
+      label: '归还物流单号',
+      admin: {
+        description: '用户归还设备时的物流单号',
       },
     },
     {
@@ -413,6 +508,7 @@ export const Orders: CollectionConfig = {
         // 创建订单时生成订单号
         if (operation === 'create') {
           data.order_no = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+          data.order_creat_at = new Date().toISOString()
 
           // 从 SKU 中获取商户、价格快照等信息
           if (data.merchant_sku) {
@@ -492,12 +588,55 @@ export const Orders: CollectionConfig = {
                     )
                   }
 
-                  // 设置运费
-                  data.shipping_fee = shippingResult.fee
+                  // 设置运费快照
+                  data.shipping_fee_snapshot = shippingResult.fee
                 }
               } else if (!shippingTemplateId) {
                 throw new Error('无法找到可用的运费模板，请联系商户')
               }
+            }
+          }
+
+          // 自动填充归还地址（从商户的默认归还信息中获取）
+          if (!data.return_address && data.merchant) {
+            const merchantId = typeof data.merchant === 'object' ? data.merchant.id : data.merchant
+
+            const returnInfo = await req.payload.find({
+              collection: 'return-info',
+              where: {
+                and: [
+                  {
+                    merchant: {
+                      equals: merchantId,
+                    },
+                  },
+                  {
+                    is_default: {
+                      equals: true,
+                    },
+                  },
+                  {
+                    status: {
+                      equals: 'active',
+                    },
+                  },
+                ],
+              },
+              limit: 1,
+            })
+
+            if (returnInfo.docs.length > 0) {
+              const defaultReturnInfo = returnInfo.docs[0]
+              data.return_address = {
+                contact_name: defaultReturnInfo.return_contact_name,
+                contact_phone: defaultReturnInfo.return_contact_phone,
+                province: defaultReturnInfo.return_address.province,
+                city: defaultReturnInfo.return_address.city,
+                district: defaultReturnInfo.return_address.district || '',
+                address: defaultReturnInfo.return_address.address,
+              }
+            } else {
+              throw new Error('商户未设置归还地址，请联系商户')
             }
           }
 

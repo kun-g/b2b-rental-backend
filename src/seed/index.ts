@@ -21,6 +21,7 @@ import { merchantsData, merchantAccountsData, merchantUsersData } from './data/m
 import { skusData } from './data/skus'
 import { devicesData } from './data/devices'
 import { createOrderScenarios } from './scenarios/orders'
+import { syncAccountUsers, verifyAccountUserSync } from '../utils/syncAccountUsers'
 
 async function seed() {
   // ===== 安全检查 =====
@@ -719,6 +720,17 @@ async function seed() {
       },
     })
     console.log(`   ✓ 创建了 3 条审计日志`)
+
+    // 12. 同步 Account ↔ User 双向关联
+    console.log('\n🔄 同步 Account ↔ User 双向关联...')
+    await syncAccountUsers(payload)
+
+    // 13. 验证数据一致性
+    console.log('\n🔍 验证数据一致性...')
+    const verifyResult = await verifyAccountUserSync(payload)
+    if (!verifyResult.valid) {
+      console.warn('⚠️  数据一致性验证失败，但继续完成 seed')
+    }
 
     // ===== 完成 =====
     console.log('\n✅ Seed 数据创建完成！')

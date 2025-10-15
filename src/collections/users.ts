@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, AccessArgs } from 'payload'
+import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * Users Collection - 业务账号（业务身份）
@@ -6,7 +7,7 @@ import type { CollectionConfig } from 'payload'
  *
  * 设计说明：
  * - Users 是业务身份，不负责登录认证
- * - 通过 account_id 关联到 Accounts（登录凭证）
+ * - 通过 account 关联到 Accounts（登录凭证）
  * - 一个 Account 可以有多个 User（不同业务身份）
  * - 决定用户在系统中的权限和可见数据
  *
@@ -14,6 +15,11 @@ import type { CollectionConfig } from 'payload'
  * - customer: 租方用户
  * - merchant: 商户用户
  * - platform: 平台用户
+ *
+ * 访问控制原则：
+ * - 只有登录的 Account 可以访问关联的 Users
+ * - Platform admin 可以访问所有 Users
+ * - 商户 admin 可以访问本商户的所有 Users
  */
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -23,27 +29,84 @@ export const Users: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // 业务身份管理权限
-    create: ({ req: { user } }) => {
+    // 创建业务身份权限
+    create: (async ({ req: { user, payload } }) => {
       if (!user) return false
-      // TODO: 通过 account 查找关联的 users，检查是否有 platform_admin 角色
-      return true // 暂时允许，后续完善
-    },
-    read: ({ req: { user } }) => {
+      // 检查是否有 platform_admin 角色
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    }) as any,
+
+    // 读取业务身份权限
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
-      // TODO: 根据 account 查找关联的 users 来判断权限
-      return true
-    },
-    update: ({ req: { user } }) => {
+
+      // 获取当前登录 Account 的主要 User（业务身份）
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // Platform admin 可以查看所有 Users
+      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+        return true
+      }
+
+      // 商户 admin 可以查看本商户的所有 Users
+      if (primaryUser.role === 'merchant_admin') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
+        if (!merchantId) return false
+        return {
+          merchant: {
+            equals: merchantId,
+          },
+        }
+      }
+
+      // 其他人只能查看与自己 Account 关联的 Users
+      return {
+        account: {
+          equals: user.id,
+        },
+      }
+    }) as any,
+
+    // 更新业务身份权限
+    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
-      // TODO: 权限控制
-      return true
-    },
-    delete: ({ req: { user } }) => {
+
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (!primaryUser) return false
+
+      // Platform admin 可以更新所有 Users
+      if (primaryUser.role === 'platform_admin') {
+        return true
+      }
+
+      // 商户 admin 可以更新本商户的所有 Users
+      if (primaryUser.role === 'merchant_admin') {
+        const merchantId =
+          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
+        if (!merchantId) return false
+        return {
+          merchant: {
+            equals: merchantId,
+          },
+        }
+      }
+
+      // 其他人只能更新与自己 Account 关联的 Users
+      return {
+        account: {
+          equals: user.id,
+        },
+      }
+    }) as any,
+
+    // 删除业务身份权限
+    delete: (async ({ req: { user, payload } }) => {
       if (!user) return false
-      // TODO: 权限控制
-      return true
-    },
+      // 只有 platform_admin 可以删除业务身份
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    }) as any,
   },
   fields: [
     {
@@ -166,6 +229,19 @@ export const Users: CollectionConfig = {
           }
         }
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, req, operation, previousDoc }) => {
+        // 注意：不在这里自动维护 Account.users 字段
+        // Payload 的 relationship 字段会自动处理反向查询
+        // 如果需要显式维护，可以通过数据库触发器或定期同步任务来实现
+        // 避免在 hook 中相互更新导致性能问题
+
+        // 仅记录日志用于调试（可选）
+        if (operation === 'create') {
+          console.log(`✓ User created: ${doc.id}, linked to Account: ${doc.account}`)
+        }
       },
     ],
   },
