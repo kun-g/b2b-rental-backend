@@ -201,7 +201,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | order_no | 租赁订单编号（自动生成） |
 | out_pay_no | 外部支付单号 |
 | amount | 金额（正数为补收，负数为退款） |
-| type | 订单类型（rent / overdue / addr_up / addr_down） |
+| type | 订单类型（rent / rent_canceled / overdue / addr_up / addr_down） |
 | status | 支付状态（pending / paid / refunded / failed） |
 | pay_creat_at| 支付订单创建时间 |
 | paid_at | 支付时间 |
