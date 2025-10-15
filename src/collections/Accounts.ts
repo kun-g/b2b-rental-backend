@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * Accounts Collection - 用户账号（登录凭证）
@@ -22,32 +23,52 @@ export const Accounts: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // 账号管理权限 - 只有平台管理员可以操作
-    create: ({ req: { user } }) => {
-      // 允许注册（无需登录）或平台管理员创建
-      if (!user) return true // 注册
-      // 检查 user 的关联 Users，看是否有 platform_admin 角色
-      return true // 暂时允许所有人创建，后续通过 Users 权限控制
-    },
-    read: ({ req: { user } }) => {
+    // 账号管理权限 - platform_admin 可以管理所有账号，其他人只能管理自己的账号
+    create: (async ({ req: { user, payload } }) => {
+      // 允许注册（无需登录）
+      if (!user) return true
+
+      // platform_admin 可以创建账号
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    }) as any,
+    read: (async ({ req: { user, payload } }) => {
       if (!user) return false
-      // 只能读取自己的账号
+
+      // 检查是否是 platform_admin
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (primaryUser?.role === 'platform_admin') {
+        return true // 可以查看所有账号
+      }
+
+      // 其他人只能读取自己的账号
       return {
         id: {
           equals: user.id,
         },
       }
-    },
-    update: ({ req: { user } }) => {
+    }) as any,
+    update: (async ({ req: { user, payload } }) => {
       if (!user) return false
-      // 只能更新自己的账号
+
+      // 检查是否是 platform_admin
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (primaryUser?.role === 'platform_admin') {
+        return true // 可以更新所有账号
+      }
+
+      // 其他人只能更新自己的账号
       return {
         id: {
           equals: user.id,
         },
       }
-    },
-    delete: () => false, // 禁止删除账号（软删除通过 status）
+    }) as any,
+    delete: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 只有 platform_admin 可以删除账号（实际上应该用软删除）
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    }) as any,
   },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天

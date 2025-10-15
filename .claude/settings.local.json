@@ -46,7 +46,12 @@
       "Bash(pnpm lint)",
       "Bash(pnpm seed:*)",
       "Bash(psql:*)",
-      "Bash(pnpm exec tsx:*)"
+      "Bash(pnpm exec tsx:*)",
+      "Bash(PGPASSWORD=password psql:*)",
+      "Read(//private/tmp/**)",
+      "Bash(timeout 240 pnpm seed --clean)",
+      "Bash(ssh:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
