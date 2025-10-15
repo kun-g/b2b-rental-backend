@@ -103,7 +103,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 |--------|-----------|
 | merchant_sku | 所属 SKU |
 | sn | 设备序列号（唯一） |
-| status | 设备状态（in_active / used / active） |
+| status | 设备状态（in_stock / in_rent / in_transit / in_maintenance / scrapped） |
 | current_order | 当前绑定订单 |
 | rental_count | 累计租赁次数 |
 
