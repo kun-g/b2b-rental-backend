@@ -1,5 +1,5 @@
 /**
- * Seed 数据：商户
+ * Seed 数据：商户和商户管理员
  */
 
 export const merchantsData = {
@@ -55,31 +55,53 @@ export const merchantsData = {
   },
 }
 
-// 商户管理员数据（关联到商户）
-export const merchantAdminsData = {
+/**
+ * 商户管理员 Accounts 数据 - 登录凭证
+ */
+export const merchantAccountsData = {
   geekAdmin: {
-    username: 'geek_admin',
+    user_name: 'geek_admin',
     email: 'admin@geek-rental.com',
     phone: '13900001111',
     password: 'MerchantA123!',
+    status: 'active' as const,
+  },
+
+  geekMember: {
+    user_name: 'geek_member',
+    email: 'member@geek-rental.com',
+    phone: '13900001112',
+    password: 'MemberA123!',
+    status: 'active' as const,
+  },
+
+  outdoorAdmin: {
+    user_name: 'outdoor_admin',
+    email: 'admin@outdoor-adventure.com',
+    phone: '13900002222',
+    password: 'MerchantB123!',
+    status: 'active' as const,
+  },
+}
+
+/**
+ * 商户管理员 Users 数据 - 业务身份（需要关联到 Account 和 Merchant）
+ */
+export const merchantUsersData = {
+  geekAdmin: {
+    user_type: 'merchant' as const,
     role: 'merchant_admin' as const,
     status: 'active' as const,
   },
 
   geekMember: {
-    username: 'geek_member',
-    email: 'member@geek-rental.com',
-    phone: '13900001112',
-    password: 'MemberA123!',
+    user_type: 'merchant' as const,
     role: 'merchant_member' as const,
     status: 'active' as const,
   },
 
   outdoorAdmin: {
-    username: 'outdoor_admin',
-    email: 'admin@outdoor-adventure.com',
-    phone: '13900002222',
-    password: 'MerchantB123!',
+    user_type: 'merchant' as const,
     role: 'merchant_admin' as const,
     status: 'active' as const,
   },

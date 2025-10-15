@@ -15,9 +15,9 @@ import 'dotenv/config'
 import { getPayload, type Payload } from 'payload'
 import pg from 'pg'
 import config from '../payload.config'
-import { usersData } from './data/users'
+import { accountsData, usersData } from './data/users'
 import { categoriesData } from './data/categories'
-import { merchantsData, merchantAdminsData } from './data/merchants'
+import { merchantsData, merchantAccountsData, merchantUsersData } from './data/merchants'
 import { skusData } from './data/skus'
 import { devicesData } from './data/devices'
 import { createOrderScenarios } from './scenarios/orders'
@@ -69,11 +69,11 @@ async function seed() {
       }
     } else {
       // 检查数据库是否已有数据
-      const existingUsers = await payload.find({
-        collection: 'users',
+      const existingAccounts = await payload.find({
+        collection: 'accounts',
         limit: 1,
       })
-      if (existingUsers.docs.length > 0) {
+      if (existingAccounts.docs.length > 0) {
         console.log('\n⚠️  警告: 数据库已有数据！')
         console.log('   如需清空后创建，请使用: pnpm seed --clean')
         console.log('   如需只清空，请使用: pnpm seed:clean')
@@ -85,25 +85,56 @@ async function seed() {
     // ===== 创建数据 =====
     console.log('\n🌱 开始创建 seed 数据...\n')
 
-    // 1. 创建平台用户
-    console.log('👤 创建平台用户...')
+    // 1. 创建平台 Accounts 和 Users
+    console.log('👤 创建平台用户（Accounts + Users）...')
+
+    // 1.1 创建平台管理员 Account
+    const adminAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.platformAdmin,
+    })
+
+    // 1.2 创建平台管理员 User（关联到 Account）
     const admin = await payload.create({
       collection: 'users',
-      data: usersData.platformAdmin,
+      data: {
+        ...usersData.platformAdmin,
+        account: adminAccount.id,
+      },
     })
-    console.log(`   ✓ ${admin.email}`)
+    console.log(`   ✓ ${adminAccount.user_name} (${admin.role})`)
 
+    // 1.3 创建平台运营 Account
+    const operatorAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.platformOperator,
+    })
+
+    // 1.4 创建平台运营 User（关联到 Account）
     const operator = await payload.create({
       collection: 'users',
-      data: usersData.platformOperator,
+      data: {
+        ...usersData.platformOperator,
+        account: operatorAccount.id,
+      },
     })
-    console.log(`   ✓ ${operator.email}`)
+    console.log(`   ✓ ${operatorAccount.user_name} (${operator.role})`)
 
+    // 1.5 创建平台客服 Account
+    const supportAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.platformSupport,
+    })
+
+    // 1.6 创建平台客服 User（关联到 Account）
     const support = await payload.create({
       collection: 'users',
-      data: usersData.platformSupport,
+      data: {
+        ...usersData.platformSupport,
+        account: supportAccount.id,
+      },
     })
-    console.log(`   ✓ ${support.email}`)
+    console.log(`   ✓ ${supportAccount.user_name} (${support.role})`)
 
     // 2. 创建类目
     console.log('\n📂 创建类目...')
@@ -184,34 +215,53 @@ async function seed() {
     })
     console.log(`   ✓ ${merchantC.name} (${merchantC.status})`)
 
-    // 4. 创建商户管理员
-    console.log('\n👨‍💼 创建商户管理员...')
+    // 4. 创建商户管理员（Accounts + Users）
+    console.log('\n👨‍💼 创建商户管理员（Accounts + Users）...')
+
+    // 4.1 商户A管理员
+    const merchantAdminAAccount = await payload.create({
+      collection: 'accounts',
+      data: merchantAccountsData.geekAdmin,
+    })
     const merchantAdminA = await payload.create({
       collection: 'users',
       data: {
-        ...merchantAdminsData.geekAdmin,
+        ...merchantUsersData.geekAdmin,
+        account: merchantAdminAAccount.id,
         merchant: merchantA.id,
       },
     })
-    console.log(`   ✓ ${merchantAdminA.email} → ${merchantA.name}`)
+    console.log(`   ✓ ${merchantAdminAAccount.user_name} (${merchantAdminA.role}) → ${merchantA.name}`)
 
+    // 4.2 商户A成员
+    const merchantMemberAAccount = await payload.create({
+      collection: 'accounts',
+      data: merchantAccountsData.geekMember,
+    })
     const merchantMemberA = await payload.create({
       collection: 'users',
       data: {
-        ...merchantAdminsData.geekMember,
+        ...merchantUsersData.geekMember,
+        account: merchantMemberAAccount.id,
         merchant: merchantA.id,
       },
     })
-    console.log(`   ✓ ${merchantMemberA.email} → ${merchantA.name}`)
+    console.log(`   ✓ ${merchantMemberAAccount.user_name} (${merchantMemberA.role}) → ${merchantA.name}`)
 
+    // 4.3 商户B管理员
+    const merchantAdminBAccount = await payload.create({
+      collection: 'accounts',
+      data: merchantAccountsData.outdoorAdmin,
+    })
     const merchantAdminB = await payload.create({
       collection: 'users',
       data: {
-        ...merchantAdminsData.outdoorAdmin,
+        ...merchantUsersData.outdoorAdmin,
+        account: merchantAdminBAccount.id,
         merchant: merchantB.id,
       },
     })
-    console.log(`   ✓ ${merchantAdminB.email} → ${merchantB.name}`)
+    console.log(`   ✓ ${merchantAdminBAccount.user_name} (${merchantAdminB.role}) → ${merchantB.name}`)
 
     // 5. 创建运费模板
     console.log('\n🚚 创建运费模板...')
@@ -454,43 +504,92 @@ async function seed() {
     }
     console.log(`   ✓ 创建了 ${Object.keys(devicesData).length} 个设备`)
 
-    // 8. 创建普通用户
-    console.log('\n👥 创建普通用户...')
+    // 8. 创建普通用户（Accounts + Users）
+    console.log('\n👥 创建普通用户（Accounts + Users）...')
+
+    // 8.1 Alice
+    const aliceAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.alice,
+    })
     const alice = await payload.create({
       collection: 'users',
-      data: usersData.alice,
+      data: {
+        ...usersData.alice,
+        account: aliceAccount.id,
+      },
     })
-    console.log(`   ✓ ${alice.username} (${alice.phone})`)
+    console.log(`   ✓ ${aliceAccount.user_name} (${aliceAccount.phone})`)
 
+    // 8.2 Bob
+    const bobAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.bob,
+    })
     const bob = await payload.create({
       collection: 'users',
-      data: usersData.bob,
+      data: {
+        ...usersData.bob,
+        account: bobAccount.id,
+      },
     })
-    console.log(`   ✓ ${bob.username} (${bob.phone})`)
+    console.log(`   ✓ ${bobAccount.user_name} (${bobAccount.phone})`)
 
+    // 8.3 Charlie
+    const charlieAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.charlie,
+    })
     const charlie = await payload.create({
       collection: 'users',
-      data: usersData.charlie,
+      data: {
+        ...usersData.charlie,
+        account: charlieAccount.id,
+      },
     })
-    console.log(`   ✓ ${charlie.username} (${charlie.phone})`)
+    console.log(`   ✓ ${charlieAccount.user_name} (${charlieAccount.phone})`)
 
-    const david = await payload.create({
+    // 8.4 David - 无授信
+    const davidAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.david,
+    })
+    const _david = await payload.create({
       collection: 'users',
-      data: usersData.david,
+      data: {
+        ...usersData.david,
+        account: davidAccount.id,
+      },
     })
-    console.log(`   ✓ ${david.username} (${david.phone}) - 无授信`)
+    console.log(`   ✓ ${davidAccount.user_name} (${davidAccount.phone}) - 无授信`)
 
+    // 8.5 Eve
+    const eveAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.eve,
+    })
     const eve = await payload.create({
       collection: 'users',
-      data: usersData.eve,
+      data: {
+        ...usersData.eve,
+        account: eveAccount.id,
+      },
     })
-    console.log(`   ✓ ${eve.username} (${eve.phone})`)
+    console.log(`   ✓ ${eveAccount.user_name} (${eveAccount.phone})`)
 
+    // 8.6 Frank - KYC待认证
+    const frankAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.frank,
+    })
     const frank = await payload.create({
       collection: 'users',
-      data: usersData.frank,
+      data: {
+        ...usersData.frank,
+        account: frankAccount.id,
+      },
     })
-    console.log(`   ✓ ${frank.username} (${frank.phone}) - KYC待认证`)
+    console.log(`   ✓ ${frankAccount.user_name} (${frankAccount.phone}) - KYC待认证`)
 
     // 9. 创建授信关系
     console.log('\n💳 创建授信关系...')
@@ -624,7 +723,8 @@ async function seed() {
     // ===== 完成 =====
     console.log('\n✅ Seed 数据创建完成！')
     console.log('\n📊 数据统计:')
-    console.log(`   用户: 12 个 (3个平台 + 3个商户 + 6个租方)`)
+    console.log(`   Accounts: 12 个 (登录凭证)`)
+    console.log(`   Users: 12 个 (业务身份: 3个平台 + 3个商户 + 6个租方)`)
     console.log(`   商户: 3 个 (2个已审核 + 1个待审核)`)
     console.log(`   类目: 7 个 (2个一级 + 5个二级)`)
     console.log(`   SKU: 7 个`)
@@ -636,10 +736,10 @@ async function seed() {
     console.log(`   审计日志: 3 条`)
 
     console.log('\n🔑 登录信息:')
-    console.log(`   平台管理员: ${admin.email} / Admin123!`)
-    console.log(`   平台运营: ${operator.email} / Operator123!`)
-    console.log(`   商户A管理员: ${merchantAdminA.email} / MerchantA123!`)
-    console.log(`   商户B管理员: ${merchantAdminB.email} / MerchantB123!`)
+    console.log(`   平台管理员: ${adminAccount.user_name} / ${accountsData.platformAdmin.password}`)
+    console.log(`   平台运营: ${operatorAccount.user_name} / ${accountsData.platformOperator.password}`)
+    console.log(`   商户A管理员: ${merchantAdminAAccount.user_name} / ${merchantAccountsData.geekAdmin.password}`)
+    console.log(`   商户B管理员: ${merchantAdminBAccount.user_name} / ${merchantAccountsData.outdoorAdmin.password}`)
 
     console.log('\n📱 测试场景:')
     console.log(`   - Alice: 有商户A授信，看不到商户B`)
@@ -711,6 +811,33 @@ async function prepareDatabase(dbUri: string) {
     await client.query('DROP TYPE IF EXISTS enum_payments_status CASCADE;')
     await client.query('DROP TYPE IF EXISTS enum_payments_channel CASCADE;')
     console.log(`   ✓ 删除了 payments 相关枚举类型（将重新创建）`)
+
+    // 6. 删除旧的 users_sessions 表（改为使用 accounts_sessions）
+    await client.query('DROP TABLE IF EXISTS users_sessions CASCADE;')
+    console.log(`   ✓ 删除了 users_sessions 表（改为 accounts_sessions）`)
+
+    // 7. 重建 Users 表和 Accounts 表（架构变更：Users 不再负责认证）
+    // 先删除有外键依赖的表
+    await client.query('DROP TABLE IF EXISTS user_merchant_credit CASCADE;')
+    await client.query('DROP TABLE IF EXISTS audit_logs CASCADE;')
+    await client.query('DROP TABLE IF EXISTS merchant_skus CASCADE;')
+    await client.query('DROP TABLE IF EXISTS orders CASCADE;')
+    await client.query('DROP TABLE IF EXISTS orders_rels CASCADE;')
+    await client.query('DROP TABLE IF EXISTS payload_preferences_rels CASCADE;')
+    await client.query('DROP TABLE IF EXISTS payload_preferences CASCADE;')
+
+    // 删除 users 和 accounts 表
+    await client.query('DROP TABLE IF EXISTS users CASCADE;')
+    await client.query('DROP TABLE IF EXISTS accounts CASCADE;')
+    console.log(`   ✓ 删除了 users 和 accounts 表（架构变更）`)
+
+    // 删除相关枚举类型
+    await client.query('DROP TYPE IF EXISTS enum_users_role CASCADE;')
+    await client.query('DROP TYPE IF EXISTS enum_users_status CASCADE;')
+    await client.query('DROP TYPE IF EXISTS enum_users_kyc_status CASCADE;')
+    await client.query('DROP TYPE IF EXISTS enum_users_user_type CASCADE;')
+    await client.query('DROP TYPE IF EXISTS enum_accounts_status CASCADE;')
+    console.log(`   ✓ 删除了相关枚举类型（将重新创建）`)
 
   } catch (error) {
     console.warn('   ⚠️  预处理警告:', error)

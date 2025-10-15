@@ -1,41 +1,106 @@
 /**
- * Seed 数据：用户
+ * Seed 数据：Accounts（登录凭证）和 Users（业务身份）
  */
 
-export const usersData = {
+/**
+ * Accounts 数据 - 登录凭证
+ */
+export const accountsData = {
   // ===== 平台端 =====
   platformAdmin: {
-    username: 'kun',
+    user_name: 'kun',
     email: 'admin@platform.com',
     phone: '13900000001',
     password: '123',
+    status: 'active' as const,
+  },
+
+  platformOperator: {
+    user_name: 'operator',
+    email: 'operator@platform.com',
+    phone: '13900000002',
+    password: 'Operator123!',
+    status: 'active' as const,
+  },
+
+  platformSupport: {
+    user_name: 'support',
+    email: 'support@platform.com',
+    phone: '13900000003',
+    password: 'Support123!',
+    status: 'active' as const,
+  },
+
+  // ===== 租方端 =====
+  alice: {
+    user_name: 'alice',
+    phone: '13800138001',
+    password: 'Alice123!',
+    status: 'active' as const,
+  },
+
+  bob: {
+    user_name: 'bob',
+    phone: '13800138002',
+    password: 'Bob123!',
+    status: 'active' as const,
+  },
+
+  charlie: {
+    user_name: 'charlie',
+    phone: '13800138003',
+    password: 'Charlie123!',
+    status: 'active' as const,
+  },
+
+  david: {
+    user_name: 'david',
+    phone: '13800138004',
+    password: 'David123!',
+    status: 'active' as const,
+  },
+
+  eve: {
+    user_name: 'eve',
+    phone: '13800138005',
+    password: 'Eve123!',
+    status: 'active' as const,
+  },
+
+  frank: {
+    user_name: 'frank',
+    phone: '13800138006',
+    password: 'Frank123!',
+    status: 'active' as const,
+  },
+}
+
+/**
+ * Users 数据 - 业务身份（关联到 Account）
+ */
+export const usersData = {
+  // ===== 平台端 =====
+  platformAdmin: {
+    user_type: 'platform' as const,
     role: 'platform_admin' as const,
     status: 'active' as const,
   },
 
   platformOperator: {
-    username: 'operator',
-    email: 'operator@platform.com',
-    phone: '13900000002',
-    password: 'Operator123!',
+    user_type: 'platform' as const,
     role: 'platform_operator' as const,
     status: 'active' as const,
   },
 
   platformSupport: {
-    username: 'support',
-    email: 'support@platform.com',
-    phone: '13900000003',
-    password: 'Support123!',
+    user_type: 'platform' as const,
     role: 'platform_support' as const,
     status: 'active' as const,
   },
 
   // ===== 租方端 =====
   alice: {
-    username: 'alice',
-    password: 'Alice123!',
-    phone: '13800138001',
+    user_type: 'customer' as const,
     role: 'customer' as const,
     status: 'active' as const,
     kyc_status: 'verified' as const,
@@ -60,9 +125,7 @@ export const usersData = {
   },
 
   bob: {
-    username: 'bob',
-    password: 'Bob123!',
-    phone: '13800138002',
+    user_type: 'customer' as const,
     role: 'customer' as const,
     status: 'active' as const,
     kyc_status: 'verified' as const,
@@ -79,9 +142,7 @@ export const usersData = {
   },
 
   charlie: {
-    username: 'charlie',
-    password: 'Charlie123!',
-    phone: '13800138003',
+    user_type: 'customer' as const,
     role: 'customer' as const,
     status: 'active' as const,
     kyc_status: 'verified' as const,
@@ -98,9 +159,7 @@ export const usersData = {
   },
 
   david: {
-    username: 'david',
-    password: 'David123!',
-    phone: '13800138004',
+    user_type: 'customer' as const,
     role: 'customer' as const,
     status: 'active' as const,
     kyc_status: 'verified' as const,
@@ -117,9 +176,7 @@ export const usersData = {
   },
 
   eve: {
-    username: 'eve',
-    password: 'Eve123!',
-    phone: '13800138005',
+    user_type: 'customer' as const,
     role: 'customer' as const,
     status: 'active' as const,
     kyc_status: 'verified' as const,
@@ -136,9 +193,7 @@ export const usersData = {
   },
 
   frank: {
-    username: 'frank',
-    password: 'Frank123!',
-    phone: '13800138006',
+    user_type: 'customer' as const,
     role: 'customer' as const,
     status: 'active' as const,
     kyc_status: 'pending' as const, // 未认证
