@@ -38,7 +38,7 @@
   - [x] Payments 已重构为统一支付模型（type + amount + amount_detail）
   - [ ] 补充 Orders 归还地址字段说明（待实现后更新）
   - [ ] 补充 Logistics logistics_type 字段说明（待实现后更新）
-†
+
 #### 2. 业务逻辑补充
 - [ ] **授信管理**（优先级高，影响下单流程）
   - [ ] 订单创建时冻结授信额度（已记录 credit_hold_amount，需实际扣减 UserMerchantCredit.used_credit）

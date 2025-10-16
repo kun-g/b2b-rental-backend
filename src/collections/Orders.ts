@@ -1,6 +1,6 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
 import { calculateShippingFee } from '../utils/calculateShipping'
-import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
+import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
 /**
  * Orders Collection - 订单管理（核心业务流）

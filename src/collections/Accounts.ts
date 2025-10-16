@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { accountHasRole } from '../utils/getUserFromAccount'
+import { accountHasRole } from '../utils/accountUtils'
 
 /**
  * Accounts Collection - 用户账号（登录凭证）

@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
+import { accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
 /**
  * Merchants Collection - 商户管理

@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
+import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
 /**
  * UserMerchantCredit Collection - 授信管理

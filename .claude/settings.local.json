@@ -57,7 +57,8 @@
       "Bash(pnpm test:*)",
       "Bash(pnpm test:int:*)",
       "Bash(pnpm exec playwright:*)",
-      "Read(//Users/guokun/.claude/**)"
+      "Read(//Users/guokun/.claude/**)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

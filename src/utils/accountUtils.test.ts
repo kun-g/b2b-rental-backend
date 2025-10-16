@@ -4,7 +4,7 @@ import {
   getUserFromAccount,
   accountHasRole,
   getAccountMerchantId,
-} from './getUserFromAccount'
+} from './accountUtils'
 import type { User } from '../payload-types'
 
 describe('getUserFromAccount', () => {

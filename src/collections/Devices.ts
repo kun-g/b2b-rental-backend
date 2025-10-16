@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { accountHasRole } from '../utils/getUserFromAccount'
+import { accountHasRole } from '../utils/accountUtils'
 
 /**
  * Devices Collection - 设备管理（实体设备，绑定到SKU）

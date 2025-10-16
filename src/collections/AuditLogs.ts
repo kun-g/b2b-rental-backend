@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { accountHasRole } from '../utils/getUserFromAccount'
+import { accountHasRole } from '../utils/accountUtils'
 
 /**
  * AuditLogs Collection - 审计日志
