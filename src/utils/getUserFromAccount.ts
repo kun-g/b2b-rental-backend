@@ -2,23 +2,52 @@ import type { Payload } from 'payload'
 import type { User } from '../payload-types'
 
 /**
- * 获取 Account 的主要 User（业务身份）
+ * 从 Account 获取关联的 User（业务身份）
+ * - 支持可选的角色过滤
  * - 按创建时间排序，返回最早创建的 User
  * - 如果没有关联的 User，返回 null
  * - 如果查询失败，异常会传播到调用方
+ *
+ * @param payload - Payload 实例
+ * @param accountId - Account ID
+ * @param roles - 可选的角色过滤数组，为空或未提供时返回最早创建的 User
+ * @returns User 对象或 null
+ *
+ * @example
+ * // 获取任意角色的 User（最早创建的）
+ * const user = await getUserFromAccount(payload, accountId)
+ *
+ * @example
+ * // 获取 customer 角色的 User
+ * const customerUser = await getUserFromAccount(payload, accountId, ['customer'])
+ *
+ * @example
+ * // 获取商户角色的 User
+ * const merchantUser = await getUserFromAccount(payload, accountId, ['merchant_admin', 'merchant_member'])
  */
-export async function getPrimaryUserFromAccount(
+export async function getUserFromAccount(
   payload: Payload,
   accountId: string | number,
+  roles?: string[],
 ): Promise<User | null> {
-  // 查询与该 Account 关联的第一个 User（按创建时间排序）
+  // 构建查询条件
+  const where: any = {
+    account: {
+      equals: accountId,
+    },
+  }
+
+  // 如果提供了角色过滤，添加到查询条件
+  if (roles && roles.length > 0) {
+    where.role = {
+      in: roles,
+    }
+  }
+
+  // 查询与该 Account 关联的 User（按创建时间排序）
   const result = await payload.find({
     collection: 'users',
-    where: {
-      account: {
-        equals: accountId,
-      },
-    },
+    where,
     sort: 'createdAt', // 明确排序规则：返回最早创建的 User
     limit: 1,
     depth: 0,

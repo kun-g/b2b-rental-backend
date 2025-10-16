@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Payload } from 'payload'
 import {
-  getPrimaryUserFromAccount,
+  getUserFromAccount,
   accountHasRole,
   getAccountMerchantId,
 } from './getUserFromAccount'
 import type { User } from '../payload-types'
 
 describe('getUserFromAccount', () => {
-  describe('getPrimaryUserFromAccount', () => {
+  describe('getUserFromAccount', () => {
     let mockPayload: Payload
 
     beforeEach(() => {
@@ -42,7 +42,7 @@ describe('getUserFromAccount', () => {
           nextPage: null,
         })
 
-        const result = await getPrimaryUserFromAccount(mockPayload, 100)
+        const result = await getUserFromAccount(mockPayload, 100)
 
         expect(result).toEqual(mockUser)
         expect(mockPayload.find).toHaveBeenCalledWith({
@@ -82,7 +82,7 @@ describe('getUserFromAccount', () => {
           nextPage: null,
         })
 
-        const result = await getPrimaryUserFromAccount(mockPayload, '100')
+        const result = await getUserFromAccount(mockPayload, '100')
 
         expect(result).toEqual(mockUser)
         expect(mockPayload.find).toHaveBeenCalledWith({
@@ -123,7 +123,7 @@ describe('getUserFromAccount', () => {
           nextPage: null,
         })
 
-        const result = await getPrimaryUserFromAccount(mockPayload, 100)
+        const result = await getUserFromAccount(mockPayload, 100)
 
         expect(result).toEqual(mockUser)
       })
@@ -144,7 +144,7 @@ describe('getUserFromAccount', () => {
           nextPage: null,
         })
 
-        const result = await getPrimaryUserFromAccount(mockPayload, 999)
+        const result = await getUserFromAccount(mockPayload, 999)
 
         expect(result).toBeNull()
       })
@@ -175,7 +175,7 @@ describe('getUserFromAccount', () => {
           nextPage: null,
         })
 
-        const result = await getPrimaryUserFromAccount(mockPayload, 100)
+        const result = await getUserFromAccount(mockPayload, 100)
 
         expect(result).toEqual(oldestUser)
         // 验证使用了正确的排序参数
@@ -192,7 +192,7 @@ describe('getUserFromAccount', () => {
         const dbError = new Error('Database connection failed')
         vi.mocked(mockPayload.find).mockRejectedValue(dbError)
 
-        await expect(getPrimaryUserFromAccount(mockPayload, 100)).rejects.toThrow(
+        await expect(getUserFromAccount(mockPayload, 100)).rejects.toThrow(
           'Database connection failed',
         )
       })
@@ -213,7 +213,7 @@ describe('getUserFromAccount', () => {
           nextPage: null,
         })
 
-        await getPrimaryUserFromAccount(mockPayload, 123)
+        await getUserFromAccount(mockPayload, 123)
 
         expect(mockPayload.find).toHaveBeenCalledWith({
           collection: 'users',
@@ -226,6 +226,195 @@ describe('getUserFromAccount', () => {
           limit: 1, // 只查询一个
           depth: 0, // 不关联查询
         })
+      })
+    })
+
+    describe('角色过滤', () => {
+      it('应该在不提供 roles 时返回最早创建的 User', async () => {
+        const user: User = {
+          id: 1,
+          account: 100,
+          user_type: 'customer',
+          role: 'customer',
+          status: 'active',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdAt: '2024-01-01T00:00:00Z',
+        }
+
+        vi.mocked(mockPayload.find).mockResolvedValue({
+          docs: [user],
+          totalDocs: 1,
+          limit: 1,
+          totalPages: 1,
+          page: 1,
+          pagingCounter: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        })
+
+        const result = await getUserFromAccount(mockPayload, 100)
+
+        expect(result).toEqual(user)
+        expect(mockPayload.find).toHaveBeenCalledWith({
+          collection: 'users',
+          where: {
+            account: {
+              equals: 100,
+            },
+          },
+          sort: 'createdAt',
+          limit: 1,
+          depth: 0,
+        })
+      })
+
+      it('应该支持单个角色过滤', async () => {
+        const customerUser: User = {
+          id: 1,
+          account: 100,
+          user_type: 'customer',
+          role: 'customer',
+          status: 'active',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdAt: '2024-01-01T00:00:00Z',
+        }
+
+        vi.mocked(mockPayload.find).mockResolvedValue({
+          docs: [customerUser],
+          totalDocs: 1,
+          limit: 1,
+          totalPages: 1,
+          page: 1,
+          pagingCounter: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        })
+
+        const result = await getUserFromAccount(mockPayload, 100, ['customer'])
+
+        expect(result).toEqual(customerUser)
+        expect(mockPayload.find).toHaveBeenCalledWith({
+          collection: 'users',
+          where: {
+            account: {
+              equals: 100,
+            },
+            role: {
+              in: ['customer'],
+            },
+          },
+          sort: 'createdAt',
+          limit: 1,
+          depth: 0,
+        })
+      })
+
+      it('应该支持多个角色过滤', async () => {
+        const merchantUser: User = {
+          id: 1,
+          account: 100,
+          user_type: 'merchant',
+          role: 'merchant_admin',
+          merchant: 50,
+          status: 'active',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdAt: '2024-01-01T00:00:00Z',
+        }
+
+        vi.mocked(mockPayload.find).mockResolvedValue({
+          docs: [merchantUser],
+          totalDocs: 1,
+          limit: 1,
+          totalPages: 1,
+          page: 1,
+          pagingCounter: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        })
+
+        const result = await getUserFromAccount(mockPayload, 100, ['merchant_admin', 'merchant_member'])
+
+        expect(result).toEqual(merchantUser)
+        expect(mockPayload.find).toHaveBeenCalledWith({
+          collection: 'users',
+          where: {
+            account: {
+              equals: 100,
+            },
+            role: {
+              in: ['merchant_admin', 'merchant_member'],
+            },
+          },
+          sort: 'createdAt',
+          limit: 1,
+          depth: 0,
+        })
+      })
+
+      it('应该在提供空数组时忽略角色过滤', async () => {
+        const user: User = {
+          id: 1,
+          account: 100,
+          user_type: 'platform',
+          role: 'platform_admin',
+          status: 'active',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdAt: '2024-01-01T00:00:00Z',
+        }
+
+        vi.mocked(mockPayload.find).mockResolvedValue({
+          docs: [user],
+          totalDocs: 1,
+          limit: 1,
+          totalPages: 1,
+          page: 1,
+          pagingCounter: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        })
+
+        const result = await getUserFromAccount(mockPayload, 100, [])
+
+        expect(result).toEqual(user)
+        // 空数组不应该添加 role 条件
+        expect(mockPayload.find).toHaveBeenCalledWith({
+          collection: 'users',
+          where: {
+            account: {
+              equals: 100,
+            },
+          },
+          sort: 'createdAt',
+          limit: 1,
+          depth: 0,
+        })
+      })
+
+      it('应该在角色不匹配时返回 null', async () => {
+        vi.mocked(mockPayload.find).mockResolvedValue({
+          docs: [],
+          totalDocs: 0,
+          limit: 1,
+          totalPages: 0,
+          page: 1,
+          pagingCounter: 1,
+          hasPrevPage: false,
+          hasNextPage: false,
+          prevPage: null,
+          nextPage: null,
+        })
+
+        const result = await getUserFromAccount(mockPayload, 100, ['platform_admin'])
+
+        expect(result).toBeNull()
       })
     })
   })
@@ -435,7 +624,7 @@ describe('getUserFromAccount', () => {
         createdAt: '2024-01-01T00:00:00Z',
       }
 
-      // 第一次调用：getPrimaryUserFromAccount
+      // 第一次调用：getUserFromAccount
       vi.mocked(mockPayload.find).mockResolvedValueOnce({
         docs: [adminUser],
         totalDocs: 1,
@@ -463,7 +652,7 @@ describe('getUserFromAccount', () => {
         nextPage: null,
       })
 
-      const user = await getPrimaryUserFromAccount(mockPayload, 100)
+      const user = await getUserFromAccount(mockPayload, 100)
       expect(user?.role).toBe('platform_admin')
 
       const hasAdminRole = await accountHasRole(mockPayload, 100, ['platform_admin'])
@@ -534,7 +723,7 @@ describe('getUserFromAccount', () => {
         nextPage: null,
       })
 
-      const user = await getPrimaryUserFromAccount(mockPayload, 100)
+      const user = await getUserFromAccount(mockPayload, 100)
       expect(user).toBeNull()
     })
   })

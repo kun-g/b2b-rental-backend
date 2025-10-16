@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
+import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
 
 /**
  * UserMerchantCredit Collection - 授信管理
@@ -17,20 +17,14 @@ export const UserMerchantCredit: CollectionConfig = {
     read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      // 通过 Account 获取关联的 User（业务身份）
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台角色可以查看所有授信
-      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
 
       // 商户角色只能看到自己发出的授信
-      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
-        if (!merchantId) return false
+      const merchantId = await getAccountMerchantId(payload, user.id, [])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -39,10 +33,11 @@ export const UserMerchantCredit: CollectionConfig = {
       }
 
       // 用户角色只能看到自己的授信
-      if (primaryUser.role === 'customer') {
+      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+      if (customerUser) {
         return {
           user: {
-            equals: primaryUser.id,
+            equals: customerUser.id,
           },
         }
       }
@@ -58,19 +53,14 @@ export const UserMerchantCredit: CollectionConfig = {
     update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台管理员可以更新所有授信
-      if (primaryUser.role === 'platform_admin') {
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
 
       // 商户管理员只能更新自己商户发出的授信
-      if (primaryUser.role === 'merchant_admin') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
-        if (!merchantId) return false
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -83,19 +73,14 @@ export const UserMerchantCredit: CollectionConfig = {
     delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台管理员可以删除所有授信
-      if (primaryUser.role === 'platform_admin') {
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
 
       // 商户管理员只能删除自己商户发出的授信
-      if (primaryUser.role === 'merchant_admin') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
-        if (!merchantId) return false
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -285,20 +270,20 @@ export const UserMerchantCredit: CollectionConfig = {
     beforeChange: [
       async ({ data, req, operation, originalDoc }) => {
         // 获取当前操作者的 User（业务身份）
-        const primaryUser = req.user
-          ? await getPrimaryUserFromAccount(req.payload, req.user.id)
+        const user = req.user
+          ? await getUserFromAccount(req.payload, req.user.id)
           : null
 
         // 记录授信时间和授信人
         if (operation === 'create') {
           data.granted_at = new Date().toISOString()
-          data.granted_by = primaryUser?.id
+          data.granted_by = user?.id
         }
 
         // 记录撤销时间和撤销人
         if (operation === 'update' && originalDoc.status !== 'disabled' && data.status === 'disabled') {
           data.revoked_at = new Date().toISOString()
-          data.revoked_by = primaryUser?.id
+          data.revoked_by = user?.id
         }
 
         // 记录额度调整历史
@@ -311,7 +296,7 @@ export const UserMerchantCredit: CollectionConfig = {
             old_limit: originalDoc.credit_limit,
             new_limit: data.credit_limit,
             reason: data.notes || '额度调整',
-            operator: primaryUser?.id,
+            operator: user?.id,
           })
         }
 

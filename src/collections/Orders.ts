@@ -1,6 +1,6 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
 import { calculateShippingFee } from '../utils/calculateShipping'
-import { getPrimaryUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
+import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
 
 /**
  * Orders Collection - 订单管理（核心业务流）
@@ -34,11 +34,11 @@ export const Orders: CollectionConfig = {
       }
 
       // 用户角色只能查看自己的订单
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (primaryUser && primaryUser.role === 'customer') {
+      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+      if (customerUser) {
         return {
           customer: {
-            equals: primaryUser.id,
+            equals: customerUser.id,
           },
         }
       }
@@ -70,11 +70,11 @@ export const Orders: CollectionConfig = {
       }
 
       // 用户角色只能更新自己的订单
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (primaryUser && primaryUser.role === 'customer') {
+      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+      if (customerUser) {
         return {
           customer: {
-            equals: primaryUser.id,
+            equals: customerUser.id,
           },
         }
       }

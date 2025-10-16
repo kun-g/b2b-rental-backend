@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { accountHasRole, getAccountMerchantId, getPrimaryUserFromAccount } from '../utils/getUserFromAccount'
+import { accountHasRole, getAccountMerchantId, getUserFromAccount } from '../utils/getUserFromAccount'
 
 /**
  * MerchantSKUs Collection - 商户SKU（商户自建，归属类目）
@@ -241,15 +241,15 @@ export const MerchantSKUs: CollectionConfig = {
     beforeChange: [
       async ({ data, req, operation }) => {
         // 获取当前操作者的 User（业务身份）
-        const primaryUser = req.user
-          ? await getPrimaryUserFromAccount(req.payload, req.user.id)
+        const user = req.user
+          ? await getUserFromAccount(req.payload, req.user.id)
           : null
 
         // 自动设置创建人/更新人
         if (operation === 'create') {
-          data.created_by = primaryUser?.id
+          data.created_by = user?.id
         }
-        data.updated_by = primaryUser?.id
+        data.updated_by = user?.id
 
         // 如果状态为已通过且is_listed为true，才真正上架
         if (data.listing_status === 'approved' && data.is_listed) {
