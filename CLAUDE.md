@@ -26,12 +26,6 @@ pnpm dev
 
 # 构建生产版本
 pnpm build
-
-# 启动生产服务器
-pnpm start
-
-# 清理后重启开发服务器（解决缓存问题）
-pnpm devsafe
 ```
 
 ### 代码质量
@@ -290,8 +284,13 @@ networks:
 
 **原因**：数据库未对外暴露端口。
 
-**解决方案**：使用工作站容器执行：
+**解决方案**：使用工作站容器执行（根据环境选择命令）：
+
 ```bash
+# 本地开发环境（Podman）
+podman exec cms-db-workstation pnpm seed
+
+# 预发布/生产环境（Docker）
 docker exec cms-db-workstation pnpm seed
 ```
 
@@ -316,80 +315,104 @@ SKIP_TYPE_CHECK=true pnpm build
 
 **必须选择 `platform_admin` 角色**，否则无法管理系统。
 
-如果选错，可以：
-```bash
-# 方法1：通过工作站修改
-docker exec cms-db-workstation sh -c 'PGPASSWORD=password psql -h rent-database-gvfzwv -U postgress -d cms -c "UPDATE users SET role = '\''platform_admin'\'' WHERE username = '\''admin'\'';"'
+如果选错，可以通过工作站修复（根据环境选择命令）：
 
-# 方法2：清空重建
+```bash
+# 本地开发环境（Podman）
+# 方法1：直接修改用户角色
+podman exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h <数据库容器名> -U postgress -d cms -c "UPDATE users SET role = '\''platform_admin'\'' WHERE username = '\''admin'\'';"'
+
+# 方法2：清空重建（会删除所有数据）
+podman exec cms-db-workstation pnpm seed --clean
+
+# 预发布/生产环境（Docker）
+# 方法1：直接修改用户角色（预发布环境）
+docker exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk -U postgress -d cms -c "UPDATE users SET role = '\''platform_admin'\'' WHERE username = '\''admin'\'';"'
+
+# 方法2：清空重建（会删除所有数据）
 docker exec cms-db-workstation pnpm seed --clean
 ```
 
 ## 调试技巧
 
 ### 容器日志查看
+
+根据环境选择对应的命令：
+
 ```bash
-# 查看 CMS 服务日志
-docker logs cms
+# 本地开发环境（Podman）
+podman logs cms                        # 查看 CMS 服务日志
+podman logs cms-db-workstation        # 查看工作站日志
+podman logs -f cms                    # 实时跟踪 CMS 日志
+podman logs -f cms-db-workstation     # 实时跟踪工作站日志
 
-# 查看工作站日志
-docker logs cms-db-workstation
-
-# 实时跟踪日志
-docker logs -f cms
+# 预发布/生产环境（Docker）
+docker logs cms                        # 查看 CMS 服务日志
+docker logs cms-db-workstation        # 查看工作站日志
+docker logs -f cms                    # 实时跟踪 CMS 日志
+docker logs -f cms-db-workstation     # 实时跟踪工作站日志
 ```
 
 ### 数据库连接测试
+
 ```bash
+# 本地开发环境（Podman）
 # 测试从工作站到数据库的连接
-docker exec cms-db-workstation nc -zv rent-database-gvfzwv 5432
+podman exec cms-db-workstation nc -zv <数据库容器名或主机> 5432
 
 # 查看数据库主机解析
-docker exec cms-db-workstation getent hosts rent-database-gvfzwv
+podman exec cms-db-workstation getent hosts <数据库容器名>
+
+# 检查网络配置
+podman network inspect <网络名>
+
+# 预发布/生产环境（Docker）
+# 测试从工作站到数据库的连接（预发布环境）
+docker exec cms-db-workstation nc -zv rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk 5432
+
+# 查看数据库主机解析（预发布环境）
+docker exec cms-db-workstation getent hosts rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk
 
 # 检查网络配置
 docker network inspect dokploy-network
 ```
 
 ### 环境变量检查
-```bash
-# 查看 CMS 容器环境变量
-docker exec cms env | grep -E "DATABASE|PAYLOAD"
 
-# 查看工作站环境变量
-docker exec cms-db-workstation env | grep -E "DATABASE|NODE_ENV"
+```bash
+# 本地开发环境（Podman）
+podman exec cms env | grep -E "DATABASE|PAYLOAD"                           # CMS 容器
+podman exec cms-db-workstation env | grep -E "DATABASE|NODE_ENV"          # 工作站容器
+
+# 预发布/生产环境（Docker）
+docker exec cms env | grep -E "DATABASE|PAYLOAD"                           # CMS 容器
+docker exec cms-db-workstation env | grep -E "DATABASE|NODE_ENV"          # 工作站容器
 ```
 
 ## 数据库工作站使用
 
-工作站是一个包含完整源码和依赖的容器，用于执行数据库相关操作。
+工作站是一个包含完整源码和依赖的容器，用于执行数据库相关操作（seed、clean、直接查询等）。
 
-### 常用操作
+### 环境差异
+
+本项目在不同环境使用不同的容器引擎：
+
+- **本地开发环境**：使用 **Podman** (`podman` 命令)
+  - 数据库容器：postgres-db
+- **预发布/生产环境**：使用 **Docker** (`docker` 命令)
+  - 容器名称：
+      - **工作站容器**：`cms-db-workstation`
+      - **数据库容器**（预发布）：`rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk`
+
+### 常见操作
 
 ```bash
-# 进入工作站
-docker exec -it cms-db-workstation sh
+# 清空数据库
+psql -U postgres -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-# 初始化数据库（创建测试数据）
-docker exec cms-db-workstation pnpm seed
-
-# 清空后重建
-docker exec cms-db-workstation pnpm seed --clean
-
-# 仅清空数据
-docker exec cms-db-workstation pnpm seed:clean
-
-# 直接查询数据库
-docker exec cms-db-workstation sh -c 'PGPASSWORD=hHvjxC24 psql -h rent-database-gvfzwv -U postgress -d cms -c "SELECT * FROM users LIMIT 5;"'
-
-# 查看环境变量
-docker exec cms-db-workstation sh -c 'echo $DATABASE_URI'
+# seed
+pnpm seed --clean
 ```
-
-### 注意事项
-
-- 工作站包含完整源码，仅在需要时启用
-- 工作站使用 NODE_ENV=development 运行
 
 ## 相关文档
 
@@ -425,22 +448,38 @@ docker exec cms-db-workstation sh -c 'echo $DATABASE_URI'
 ```
 
 - **CMS Service**: 生产服务，使用 standalone 模式（~500MB）
-- **Database Service**: Dokploy 管理的 PostgreSQL (rent-database-gvfzwv)
-- **Workstation**: 数据库管理容器，包含完整源码，用于 seed/clean 操作
+- **Database Service**: Dokploy 管理的 PostgreSQL
+  - 预发布环境：`rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk`
+- **Workstation**: 数据库管理容器（`cms-db-workstation`），包含完整源码，用于 seed/clean 操作
+
+### 环境说明
+
+本项目在不同环境使用不同的容器引擎：
+- **本地开发**：Podman
+- **预发布/生产**：Docker（Dokploy 平台）
 
 ### 数据库初始化工作流
 
-#### 首次部署初始化
+#### 首次部署初始化（预发布/生产环境）
 
 ```bash
-# 2. 部署应用，等待容器启动
+# 1. 部署应用，等待所有容器启动
 
-# 3. 执行数据库初始化
+# 2. 执行数据库初始化（使用工作站容器）
 docker exec cms-db-workstation pnpm seed
 
-# 4. 验证初始化成功
-docker exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h rent-database-gvfzwv -U postgress -d cms -c "SELECT COUNT(*) FROM users;"'
+# 3. 验证初始化成功（预发布环境）
+docker exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk -U postgress -d cms -c "SELECT COUNT(*) FROM users;"'
+```
 
+#### 本地开发环境初始化
+
+```bash
+# 使用 Podman 执行
+podman exec cms-db-workstation pnpm seed
+
+# 验证（根据实际数据库容器名称调整）
+podman exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h <数据库容器名> -U postgress -d cms -c "SELECT COUNT(*) FROM users;"'
 ```
 
 ### Docker 配置要点

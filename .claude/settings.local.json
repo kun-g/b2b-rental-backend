@@ -53,7 +53,11 @@
       "Bash(ssh:*)",
       "Bash(git push:*)",
       "Bash(podman exec:*)",
-      "Bash(DATABASE_URI=\"postgresql://dev:password@localhost:5432/rental?schema=public\" PAYLOAD_SECRET=5a7ff1d3b3da0977ad05e12e9f40509095c9a1e99b1821bbd9ab4b519cc48c5b pnpm exec tsx verify-multi-users.ts)"
+      "Bash(DATABASE_URI=\"postgresql://dev:password@localhost:5432/rental?schema=public\" PAYLOAD_SECRET=5a7ff1d3b3da0977ad05e12e9f40509095c9a1e99b1821bbd9ab4b519cc48c5b pnpm exec tsx verify-multi-users.ts)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm test:int:*)",
+      "Bash(pnpm exec playwright:*)",
+      "Read(//Users/guokun/.claude/**)"
     ],
     "deny": [],
     "ask": []

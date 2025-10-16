@@ -10,3 +10,6 @@ build
 .DS_Store
 coverage
 postgres-data
+
+playwright-report
+test-results
