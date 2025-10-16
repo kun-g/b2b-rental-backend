@@ -193,7 +193,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 |--------|-----------|
 | logistics_id | 租赁平台的物流ID |
 | order_no | 租赁订单编号 |
-| arrier | 物流承运商 |
+| carrier | 物流承运商 |
 | logistics_no | 物流单号 |
 | ship_at | 发货时间 |
 | logistics_type| 物流类型（发货，归还） |
