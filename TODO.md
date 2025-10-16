@@ -2,25 +2,12 @@
 
 ## 已完成 ✅
 
-- [x] 创建 14 个核心 Collections（基于 PRD v0.2）
-- [x] 配置权限控制（基于角色的访问控制 RBAC）
-- [x] 实现基础 Hooks（订单号生成、状态流转、授信历史记录等）
-- [x] 生成 TypeScript 类型定义
-- [x] 编写 Collections 设计文档
-- [x] 配置 PostgreSQL 数据库连接
-- [x] 本地开发环境 SQLite3 支持（测试环境）
-- [x] 数据库自动迁移（Payload push: true）
-- [x] 创建完整 Seed 数据（12个用户、3个商户、10个订单等）
-- [x] 下单时根据地址和模板计算运费
-- [x] 不发地区拦截逻辑
-- [x] 实现 PAID → TO_SHIP 自动流转
-- [x] Accounts/Users 分离（支持一账号多业务身份）
-- [x] Payments 统一支付模型（整合 Surcharges 功能）
-- [x] 实现 Statements（对账单）和 Surcharges（附加费用）Collections
 
 ## 待完成 🚧
 
 ### 优先级 P0（必须完成）
+
+- [ ] Payload 中间件：在认证时自动加载 primaryUser 到 req.user
 
 #### 1. Collections 字段对齐（基于文档 B2B_Collections_WithDesc.md）
 
@@ -53,7 +40,7 @@
   - [x] Payments 已重构为统一支付模型（type + amount + amount_detail）
   - [ ] 补充 Orders 归还地址字段说明（待实现后更新）
   - [ ] 补充 Logistics logistics_type 字段说明（待实现后更新）
-
+†
 #### 2. 业务逻辑补充
 - [ ] **授信管理**（优先级高，影响下单流程）
   - [ ] 订单创建时冻结授信额度（已记录 credit_hold_amount，需实际扣减 UserMerchantCredit.used_credit）

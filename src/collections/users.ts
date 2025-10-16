@@ -164,8 +164,7 @@ export const Users: CollectionConfig = {
         // 更新时只有平台管理员和平台运营可以修改角色
         update: async ({ req: { user, payload } }) => {
           if (!user) return false
-          const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-          return primaryUser?.role === 'platform_admin' || primaryUser?.role === 'platform_operator'
+          return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
         },
         // 读取时所有人可见
         read: () => true,

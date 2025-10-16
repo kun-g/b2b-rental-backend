@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
+import { accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * Accounts Collection - 用户账号（登录凭证）
@@ -35,8 +35,7 @@ export const Accounts: CollectionConfig = {
       if (!user) return false
 
       // 检查是否是 platform_admin
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (primaryUser?.role === 'platform_admin') {
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true // 可以查看所有账号
       }
 
@@ -51,8 +50,7 @@ export const Accounts: CollectionConfig = {
       if (!user) return false
 
       // 检查是否是 platform_admin
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (primaryUser?.role === 'platform_admin') {
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true // 可以更新所有账号
       }
 
