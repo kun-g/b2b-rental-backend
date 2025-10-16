@@ -4,6 +4,7 @@
 - 10-16更新
 	- 订单管理中支付流水号改为列表，关联该租赁订单的所有支付订单；删除了外部订单号，通过支付流水号进行关联
 	- 订单管理中增加发货、归还物流ID，对两个物流信息进行关联
+	- 设备信息简化了设备的状态
 - 10-15更新
 	- 增加account的collections，取消原先在uesr中的account类型定义;
  	- payments增加type，可了解每一笔支付订单是正常租赁，还是修改地址亦或是补差价；
@@ -108,7 +109,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 |--------|-----------|
 | merchant_sku | 所属 SKU |
 | sn | 设备序列号（唯一） |
-| status | 设备状态（in_stock / in_rent / in_transit / in_maintenance / scrapped） |
+| status | 设备状态（in_stock / used） |
 | current_order | 当前绑定订单 |
 | rental_count | 累计租赁次数 |
 
@@ -122,7 +123,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | return_contact_name | 回收联系人姓名 |
 | return_contact_phone | 回收联系人电话 |
 | return_address | 回收地址 |
-| status | 状态（active / in_active） |
+| status | 状态（active / disabled） |
 
 ---
 
@@ -240,7 +241,7 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | parent | 父类目ID |
 | path | 类目路径（自动生成） |
 | sort | 排序号 |
-| status | 状态（active / in_active） |
+| status | 状态（active / disabled） |
 
 ---
 ## 以下为后续规划的内容
