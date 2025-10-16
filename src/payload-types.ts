@@ -509,11 +509,7 @@ export interface Order {
    */
   order_no: string;
   /**
-   * 关联的交易流水号
-   */
-  transaction_no?: string | null;
-  /**
-   * 第三方支付平台返回的支付单号
+   * 第三方支付平台返回的支付单号（冗余字段，方便快速查询）
    */
   out_pay_no?: string | null;
   customer: number | User;
@@ -592,7 +588,14 @@ export interface Order {
     district?: string | null;
     address?: string | null;
   };
-  logistics?: (number | null) | Logistic;
+  /**
+   * 订单的发货物流信息（logistics_type=shipping）
+   */
+  shipping_logistics?: (number | null) | Logistic;
+  /**
+   * 订单的归还物流信息（logistics_type=return）
+   */
+  return_logistics?: (number | null) | Logistic;
   /**
    * 包含租赁支付、逾期补收、改址差额等所有支付
    */
@@ -799,7 +802,7 @@ export interface ReturnInfo {
   /**
    * 停用后该地址将不可用于新订单
    */
-  status: 'active' | 'inactive';
+  status: 'active' | 'disabled';
   /**
    * 每个商户只能有一个默认归还地址
    */
@@ -1263,7 +1266,6 @@ export interface UserMerchantCreditSelect<T extends boolean = true> {
  */
 export interface OrdersSelect<T extends boolean = true> {
   order_no?: T;
-  transaction_no?: T;
   out_pay_no?: T;
   customer?: T;
   merchant?: T;
@@ -1303,7 +1305,8 @@ export interface OrdersSelect<T extends boolean = true> {
         district?: T;
         address?: T;
       };
-  logistics?: T;
+  shipping_logistics?: T;
+  return_logistics?: T;
   payments?: T;
   statement?: T;
   is_overdue?: T;

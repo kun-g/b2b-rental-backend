@@ -10,34 +10,37 @@
 #### 1. Collections 字段对齐（基于文档 B2B_Collections_WithDesc.md）
 
 **Orders Collection 字段补充**（影响核心业务流程）
-- [ ] 添加 `return_contact_name` - 归还联系人姓名
-- [ ] 添加 `return_contact_phone` - 归还联系人电话
-- [ ] 添加 `return_address` - 归还地址（或使用 group）
-- [ ] 添加 `transaction_no` - 交易流水号（关联 Payments）
-- [ ] 添加 `out_pay_no` - 外部支付单号
-- [ ] 添加 `shipping_date` - 实际发货时间
+- [x] ~~添加 `return_contact_name`~~ - 已存在于 return_address group 中
+- [x] ~~添加 `return_contact_phone`~~ - 已存在于 return_address group 中
+- [x] ~~添加 `return_address`~~ - 已完成（group 形式，Orders.ts:342-381）
+- [x] ~~添加 `transaction_no`~~ - 已移除冗余字段，改为通过 payments 关系获取多个交易流水号
+- [x] ~~添加 `out_pay_no`~~ - 已完成（Orders.ts:104-110）
+- [x] ~~添加 `shipping_date`~~ - 已完成（Orders.ts:174-183）
 - [x] ~~重命名 `shipping_fee` → `shipping_fee_snapshot`~~（保持现有命名）
+- [x] **拆分 logistics 字段** - 改为 shipping_logistics 和 return_logistics（Orders.ts:383-399）
 
 **Payments Collection 字段补充**
-- [x] 添加 `out_pay_no` - 外部支付单号（已完成，Payments.ts:58-64）
-- [x] 添加 `type` - 支付类型（rent / overdue / addr_up / addr_down）（已完成，Payments.ts:66-79）
-- [x] 添加 `amount` - 统一金额字段，支持正负（已完成，Payments.ts:81-88）
-- [x] 添加 `amount_detail` group - 金额明细（rent + shipping）（已完成，Payments.ts:90-111）
-- [ ] 添加 `pay_creat_at` - 支付订单创建时间（可选，评估是否使用 createdAt）
+- [x] 添加 `out_pay_no` - 外部支付单号（已完成，Payments.ts:71-77）
+- [x] 添加 `type` - 支付类型（rent / overdue / addr_up / addr_down）（已完成，Payments.ts:79-93）
+- [x] 添加 `amount` - 统一金额字段，支持正负（已完成，Payments.ts:95-102）
+- [x] 添加 `amount_detail` group - 金额明细（rent + shipping）（已完成，Payments.ts:104-125）
+- [x] ~~添加 `pay_creat_at`~~ - 已完成，支付订单创建时间（Payments.ts:140-150）
 - [x] 重构为统一支付模型（整合 Surcharges 功能）（已完成）
 
 **Logistics Collection 字段补充**
-- [ ] 添加 `logistics_type` - 物流类型（shipping / returning）
-- [ ] 评估是否拆分发货/归还为两条记录（设计决策待定）
+- [x] ~~添加 `logistics_type`~~ - 已完成（shipping / return，Logistics.ts:72-83）
+- [x] ~~评估是否拆分发货/归还为两条记录~~ - 已决策：拆分为两条记录，通过 logistics_type 区分
 
 **设计文档同步**
-- [ ] 更新 `docs/B2B_Collections_WithDesc.md`
+- [x] ~~更新 `docs/B2B_Collections_WithDesc.md`~~ - 已完成字段对齐和拼写修正
   - [x] Statements 已实现（src/collections/Statements.ts）
   - [x] Surcharges 功能已整合到 Payments.type 中
   - [x] Accounts/Users 已分离实现（src/collections/Accounts.ts + users.ts）
   - [x] Payments 已重构为统一支付模型（type + amount + amount_detail）
-  - [ ] 补充 Orders 归还地址字段说明（待实现后更新）
-  - [ ] 补充 Logistics logistics_type 字段说明（待实现后更新）
+  - [x] ~~Orders 归还地址字段~~ - 已存在（return_address group）
+  - [x] ~~Logistics logistics_type 字段~~ - 已实现（shipping / return）
+  - [x] ~~修正 Logistics 拼写错误~~ - arrier → carrier
+  - [x] ~~ReturnInfo 状态值统一~~ - inactive → disabled
 
 #### 2. 业务逻辑补充
 - [ ] **授信管理**（优先级高，影响下单流程）
@@ -87,17 +90,19 @@
 ### 优先级 P1.5（架构评估）
 
 #### 7. 数据模型一致性评估
-- [ ] **Orders ↔ Logistics 关联设计**
-  - 当前：双向关联（Orders.logistics + Logistics.order），可能导致不一致
-  - 建议：评估是否只保留单向关联（Logistics → Order）
+- [x] **Orders ↔ Logistics 关联设计** ✅ 已完成
+  - 现在：双向关联优化（Orders.shipping_logistics + Orders.return_logistics + Logistics.order）
+  - Orders 分别关联发货和归还两条物流记录（shipping_logistics / return_logistics）
+  - Logistics 通过 order 字段反向关联订单
+  - 通过 logistics_type 字段区分物流类型（shipping / return）
 - [x] **Payments ↔ Surcharges 合并** ✅ 已完成
   - Surcharges 功能已整合到 Payments.type 中
   - 统一支付模型：通过 type 区分（rent/overdue/addr_up/addr_down）
   - Surcharges Collection 保留（可选移除）
-- [ ] **Logistics 发货/归还拆分评估**
-  - 当前：一条记录包含发货和归还信息（ship_no + return_ship_no）
-  - 备选：拆分为两条记录，通过 logistics_type 区分
-  - 待定：根据实际业务场景决策
+- [x] **Logistics 发货/归还拆分评估** ✅ 已完成
+  - 已决策：拆分为两条记录，通过 logistics_type 区分（shipping / return）
+  - Orders 中分别关联：shipping_logistics 和 return_logistics
+  - 每条 Logistics 记录包含：logistics_id, order_no, carrier, logistics_no, ship_at, logistics_type
 - [x] **Accounts/Users 分离** ✅ 已完成
   - 已分离为两个 Collection（Accounts 负责登录，Users 负责业务身份）
   - Accounts: 登录凭证（phone/email/user_name + password）

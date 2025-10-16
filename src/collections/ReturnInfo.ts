@@ -161,7 +161,7 @@ export const ReturnInfo: CollectionConfig = {
       label: '状态',
       options: [
         { label: '启用', value: 'active' },
-        { label: '停用', value: 'inactive' },
+        { label: '停用', value: 'disabled' },
       ],
       admin: {
         description: '停用后该地址将不可用于新订单',

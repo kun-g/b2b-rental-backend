@@ -101,19 +101,11 @@ export const Orders: CollectionConfig = {
       },
     },
     {
-      name: 'transaction_no',
-      type: 'text',
-      label: '交易流水号',
-      admin: {
-        description: '关联的交易流水号',
-      },
-    },
-    {
       name: 'out_pay_no',
       type: 'text',
       label: '外部支付单号',
       admin: {
-        description: '第三方支付平台返回的支付单号',
+        description: '第三方支付平台返回的支付单号（冗余字段，方便快速查询）',
       },
     },
     {
@@ -380,10 +372,22 @@ export const Orders: CollectionConfig = {
       ],
     },
     {
-      name: 'logistics',
+      name: 'shipping_logistics',
       type: 'relationship',
       relationTo: 'logistics',
-      label: '物流信息',
+      label: '发货物流',
+      admin: {
+        description: '订单的发货物流信息（logistics_type=shipping）',
+      },
+    },
+    {
+      name: 'return_logistics',
+      type: 'relationship',
+      relationTo: 'logistics',
+      label: '归还物流',
+      admin: {
+        description: '订单的归还物流信息（logistics_type=return）',
+      },
     },
     {
       name: 'payments',
