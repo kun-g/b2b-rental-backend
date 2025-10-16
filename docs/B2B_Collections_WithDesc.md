@@ -1,6 +1,9 @@
 # 🧭 B2B 数据结构（Payload CMS 版，含中文说明）
 
 ## 更新说明
+- 10-16更新
+	- 订单管理中支付流水号改为列表，关联该租赁订单的所有支付订单；删除了外部订单号，通过支付流水号进行关联
+	- 订单管理中增加发货、归还物流ID，对两个物流信息进行关联
 - 10-15更新
 	- 增加account的collections，取消原先在uesr中的account类型定义;
  	- payments增加type，可了解每一笔支付订单是正常租赁，还是修改地址亦或是补差价；
@@ -156,14 +159,15 @@ https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 | 字段名 | 中文说明 |
 |--------|-----------|
 | order_no | 租赁订单编号（自动生成） |
-| transaction_no | 交易流水号 |
+| transaction_nos | 交易流水号列表 |
 | out_pay_no | 外部支付单号 |
-| logistics_id | 租赁平台的物流ID |
+| shipping_logistics_id | 发货的物流ID |
+| return_logistics_id | 归还的物流ID |
 | customer | 下单用户 |
 | merchant | 商户 |
 | merchant_sku | SKU |
 | device | 绑定设备 |
-| status | 状态（NEW / PAID / TO_SHIP / SHIPPED / IN_RENT / RETURNING / RETURNED / COMPLETED / CANCELED） |
+| status | 状态（NEW / PAID / TO_SHIP / SHIPPED / IN_RENT / RETURNING / RETURNED / LATE_PENDING / LATE_PAID / COMPLETED / CANCELED） |
 | shipping_date | 发货时间 |
 | rent_end_date | 租期结束日 |
 | order_creat_at | 租赁订单创建时间 |
