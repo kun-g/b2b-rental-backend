@@ -19,7 +19,7 @@ export const Accounts: CollectionConfig = {
   slug: 'accounts',
   admin: {
     useAsTitle: 'username',
-    defaultColumns: ['username', 'phone', 'email', 'status', 'updatedAt'],
+    defaultColumns: ['username', 'phone', 'email', 'usersDisplay', 'status', 'updatedAt'],
     group: '账号管理',
   },
   access: {
@@ -83,6 +83,62 @@ export const Accounts: CollectionConfig = {
   },
   fields: [
     // username 字段由 loginWithUsername 自动创建，不需要手动定义
+    {
+      name: 'usersDisplay',
+      type: 'text',
+      label: '关联身份',
+      virtual: true,
+      admin: {
+        description: '显示该账号关联的所有业务身份',
+        position: 'sidebar',
+        readOnly: true,
+      },
+      hooks: {
+        afterRead: [
+          async ({ siblingData, req: { payload } }) => {
+            // 如果没有关联的 users，返回空
+            if (!siblingData.users || !Array.isArray(siblingData.users) || siblingData.users.length === 0) {
+              return '无关联身份'
+            }
+
+            try {
+              // 获取所有关联的 User 详细信息
+              const userPromises = siblingData.users.map(async (user: any) => {
+                const userId = typeof user === 'object' ? user.id : user
+                try {
+                  const userDoc = await payload.findByID({
+                    collection: 'users',
+                    id: userId,
+                    depth: 0,
+                  })
+
+                  // 角色映射
+                  const roleMap: Record<string, string> = {
+                    customer: '租方用户',
+                    merchant_member: '商户成员',
+                    merchant_admin: '商户管理员',
+                    platform_operator: '平台运营',
+                    platform_admin: '平台管理员',
+                    platform_support: '平台客服',
+                  }
+
+                  const roleLabel = roleMap[userDoc.role] || userDoc.role
+                  return `${roleLabel} - ID: ${userId}`
+                } catch (error) {
+                  return `未知身份 - ID: ${userId}`
+                }
+              })
+
+              const userLabels = await Promise.all(userPromises)
+              return userLabels.join(', ')
+            } catch (error) {
+              console.error('获取用户身份失败:', error)
+              return '获取失败'
+            }
+          },
+        ],
+      },
+    },
     {
       name: 'phone',
       type: 'text',

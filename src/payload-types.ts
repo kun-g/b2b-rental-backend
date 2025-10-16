@@ -158,6 +158,10 @@ export interface AccountAuthOperations {
 export interface Account {
   id: number;
   /**
+   * 显示该账号关联的所有业务身份
+   */
+  usersDisplay?: string | null;
+  /**
    * 用于登录和接收验证码（与邮箱二选一）
    */
   phone?: string | null;
@@ -1031,6 +1035,7 @@ export interface PayloadMigration {
  * via the `definition` "accounts_select".
  */
 export interface AccountsSelect<T extends boolean = true> {
+  usersDisplay?: T;
   phone?: T;
   users?: T;
   status?: T;
