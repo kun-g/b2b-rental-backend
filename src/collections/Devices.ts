@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
+import { accountHasRole } from '../utils/getUserFromAccount'
 
 /**
  * Devices Collection - 设备管理（实体设备，绑定到SKU）
@@ -12,39 +13,57 @@ export const Devices: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 平台角色可以查看所有设备
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        // TODO: 需要通过merchant_sku关联查询
+
+      // 商户角色可以查看设备（TODO: 需要通过merchant_sku关联查询来过滤，暂时返回true）
+      if (await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])) {
         return true
       }
+
       return false
-    },
-    create: ({ req: { user } }) => {
-      return user?.role === 'merchant_admin' || user?.role === 'merchant_member'
-    },
-    update: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin') {
+    }) as any,
+    create: (async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 商户角色可以创建设备
+      return await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])
+    }) as any,
+    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 平台管理员可以更新所有设备
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        // TODO: 需要通过merchant_sku关联查询
+
+      // 商户角色可以更新设备（TODO: 需要通过merchant_sku关联查询来过滤，暂时返回true）
+      if (await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])) {
         return true
       }
+
       return false
-    },
-    delete: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin') {
+    }) as any,
+    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 平台管理员可以删除所有设备
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
-      if (user?.role === 'merchant_admin') {
-        // TODO: 需要通过merchant_sku关联查询
+
+      // 商户管理员可以删除设备（TODO: 需要通过merchant_sku关联查询来过滤，暂时返回true）
+      if (await accountHasRole(payload, user.id, ['merchant_admin'])) {
         return true
       }
+
       return false
-    },
+    }) as any,
   },
   fields: [
     {

@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
+import { accountHasRole, getAccountMerchantId, getPrimaryUserFromAccount } from '../utils/getUserFromAccount'
 
 /**
  * MerchantSKUs Collection - 商户SKU（商户自建，归属类目）
@@ -16,19 +16,14 @@ export const MerchantSKUs: CollectionConfig = {
     read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      // 通过 Account 获取关联的 User（业务身份）
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台角色可以查看所有 SKU
-      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
 
       // 商户角色只能查看自己的 SKU
-      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
+      const merchantId = await getAccountMerchantId(payload, user.id, [])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -49,18 +44,14 @@ export const MerchantSKUs: CollectionConfig = {
     update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台角色可以更新所有 SKU
-      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
 
       // 商户角色只能更新自己的 SKU
-      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
+      const merchantId = await getAccountMerchantId(payload, user.id, [])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -73,18 +64,14 @@ export const MerchantSKUs: CollectionConfig = {
     delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台管理员可以删除所有 SKU
-      if (primaryUser.role === 'platform_admin') {
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
 
       // 商户管理员只能删除自己的 SKU
-      if (primaryUser.role === 'merchant_admin') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,

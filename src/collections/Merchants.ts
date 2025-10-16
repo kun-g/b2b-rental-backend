@@ -1,5 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
+import { accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
 
 /**
  * Merchants Collection - 商户管理
@@ -16,19 +16,14 @@ export const Merchants: CollectionConfig = {
     read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      // 通过 Account 获取关联的 User（业务身份）
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台角色可以查看所有商户
-      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
 
       // 商户角色只能查看自己的商户信息
-      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
+      const merchantId = await getAccountMerchantId(payload, user.id, [])
+      if (merchantId) {
         return {
           id: {
             equals: merchantId,

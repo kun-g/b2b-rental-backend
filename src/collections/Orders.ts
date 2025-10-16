@@ -1,6 +1,6 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
 import { calculateShippingFee } from '../utils/calculateShipping'
-import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
+import { getPrimaryUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
 
 /**
  * Orders Collection - 订单管理（核心业务流）
@@ -18,20 +18,14 @@ export const Orders: CollectionConfig = {
     read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      // 通过 Account 获取关联的 User（业务身份）
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台角色可以查看所有订单
-      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
 
       // 商户角色只能查看自己商户的订单
-      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
-        if (!merchantId) return false
+      const merchantId = await getAccountMerchantId(payload, user.id, [])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -40,7 +34,8 @@ export const Orders: CollectionConfig = {
       }
 
       // 用户角色只能查看自己的订单
-      if (primaryUser.role === 'customer') {
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (primaryUser && primaryUser.role === 'customer') {
         return {
           customer: {
             equals: primaryUser.id,
@@ -59,19 +54,14 @@ export const Orders: CollectionConfig = {
     update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // 平台角色可以更新所有订单
-      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
 
       // 商户角色只能更新自己商户的订单
-      if (primaryUser.role === 'merchant_admin' || primaryUser.role === 'merchant_member') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
-        if (!merchantId) return false
+      const merchantId = await getAccountMerchantId(payload, user.id, [])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -80,7 +70,8 @@ export const Orders: CollectionConfig = {
       }
 
       // 用户角色只能更新自己的订单
-      if (primaryUser.role === 'customer') {
+      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+      if (primaryUser && primaryUser.role === 'customer') {
         return {
           customer: {
             equals: primaryUser.id,
