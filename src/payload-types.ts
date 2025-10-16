@@ -86,7 +86,11 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    accounts: {
+      users: 'users';
+    };
+  };
   collectionsSelect: {
     accounts: AccountsSelect<false> | AccountsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -158,17 +162,14 @@ export interface AccountAuthOperations {
 export interface Account {
   id: number;
   /**
-   * 显示该账号关联的所有业务身份
-   */
-  usersDisplay?: string | null;
-  /**
    * 用于登录和接收验证码（与邮箱二选一）
    */
   phone?: string | null;
-  /**
-   * 该账号关联的所有业务身份（一个账号可以有多个身份）
-   */
-  users?: (number | User)[] | null;
+  users?: {
+    docs?: (number | User)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   /**
    * 禁用后无法登录
    */
@@ -1035,7 +1036,6 @@ export interface PayloadMigration {
  * via the `definition` "accounts_select".
  */
 export interface AccountsSelect<T extends boolean = true> {
-  usersDisplay?: T;
   phone?: T;
   users?: T;
   status?: T;

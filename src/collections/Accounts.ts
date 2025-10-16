@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
 import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
 
 /**
@@ -19,19 +19,19 @@ export const Accounts: CollectionConfig = {
   slug: 'accounts',
   admin: {
     useAsTitle: 'username',
-    defaultColumns: ['username', 'phone', 'email', 'usersDisplay', 'status', 'updatedAt'],
+    defaultColumns: ['username', 'phone', 'email', 'status', 'updatedAt'],
     group: '账号管理',
   },
   access: {
     // 账号管理权限 - platform_admin 可以管理所有账号，其他人只能管理自己的账号
-    create: (async ({ req: { user, payload } }) => {
+    create: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       // 允许注册（无需登录）
       if (!user) return true
 
       // platform_admin 可以创建账号
       return await accountHasRole(payload, user.id, ['platform_admin'])
     }) as any,
-    read: (async ({ req: { user, payload } }) => {
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
       // 检查是否是 platform_admin
@@ -47,7 +47,7 @@ export const Accounts: CollectionConfig = {
         },
       }
     }) as any,
-    update: (async ({ req: { user, payload } }) => {
+    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
       // 检查是否是 platform_admin
@@ -63,7 +63,7 @@ export const Accounts: CollectionConfig = {
         },
       }
     }) as any,
-    delete: (async ({ req: { user, payload } }) => {
+    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
       // 只有 platform_admin 可以删除账号（实际上应该用软删除）
@@ -84,62 +84,6 @@ export const Accounts: CollectionConfig = {
   fields: [
     // username 字段由 loginWithUsername 自动创建，不需要手动定义
     {
-      name: 'usersDisplay',
-      type: 'text',
-      label: '关联身份',
-      virtual: true,
-      admin: {
-        description: '显示该账号关联的所有业务身份',
-        position: 'sidebar',
-        readOnly: true,
-      },
-      hooks: {
-        afterRead: [
-          async ({ siblingData, req: { payload } }) => {
-            // 如果没有关联的 users，返回空
-            if (!siblingData.users || !Array.isArray(siblingData.users) || siblingData.users.length === 0) {
-              return '无关联身份'
-            }
-
-            try {
-              // 获取所有关联的 User 详细信息
-              const userPromises = siblingData.users.map(async (user: any) => {
-                const userId = typeof user === 'object' ? user.id : user
-                try {
-                  const userDoc = await payload.findByID({
-                    collection: 'users',
-                    id: userId,
-                    depth: 0,
-                  })
-
-                  // 角色映射
-                  const roleMap: Record<string, string> = {
-                    customer: '租方用户',
-                    merchant_member: '商户成员',
-                    merchant_admin: '商户管理员',
-                    platform_operator: '平台运营',
-                    platform_admin: '平台管理员',
-                    platform_support: '平台客服',
-                  }
-
-                  const roleLabel = roleMap[userDoc.role] || userDoc.role
-                  return `${roleLabel} - ID: ${userId}`
-                } catch (error) {
-                  return `未知身份 - ID: ${userId}`
-                }
-              })
-
-              const userLabels = await Promise.all(userPromises)
-              return userLabels.join(', ')
-            } catch (error) {
-              console.error('获取用户身份失败:', error)
-              return '获取失败'
-            }
-          },
-        ],
-      },
-    },
-    {
       name: 'phone',
       type: 'text',
       unique: true,
@@ -147,7 +91,7 @@ export const Accounts: CollectionConfig = {
       admin: {
         description: '用于登录和接收验证码（与邮箱二选一）',
       },
-      validate: (value: string, { data }: any) => {
+      validate: (value: string | null | undefined, { data }: any) => {
         // phone 和 email 至少填一个
         if (!value && !data.email) {
           return '手机号和邮箱至少填写一个'
@@ -167,7 +111,7 @@ export const Accounts: CollectionConfig = {
       admin: {
         description: '用于登录和接收通知（与手机号二选一）',
       },
-      validate: (value: string, { data }: any) => {
+      validate: (value: string | null | undefined, { data }: any) => {
         // phone 和 email 至少填一个
         if (!value && !data.phone) {
           return '手机号和邮箱至少填写一个'
@@ -177,14 +121,10 @@ export const Accounts: CollectionConfig = {
     },
     {
       name: 'users',
-      type: 'relationship',
-      relationTo: 'users',
-      hasMany: true,
+      type: 'join',
+      collection: 'users',
+      on: 'account',
       label: '关联的业务身份',
-      admin: {
-        description: '该账号关联的所有业务身份（一个账号可以有多个身份）',
-        readOnly: true, // 只读，通过 User 创建时自动关联
-      },
     },
     {
       name: 'status',
@@ -222,12 +162,32 @@ export const Accounts: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      async ({ data, operation }) => {
+      async ({ data, operation, req }) => {
+        console.log(`\n⚙️  [Accounts.beforeChange] 开始 - operation: ${operation}`)
+        console.log(`  📝 data.username: ${data.username}`)
+        console.log(`  👤 req.user: ${req.user ? req.user.id : 'null (无用户上下文)'}`)
+        console.log(`  📋 data.users: ${JSON.stringify(data.users)}`)
+        console.log(`  📋 data._verified: ${data._verified}`)
+
         // 记录登录时间
         if (operation === 'update' && data._verified) {
+          console.log(`  🔐 检测到登录验证，更新 last_login_at`)
           data.last_login_at = new Date().toISOString()
         }
+
+        console.log(`✅ [Accounts.beforeChange] 完成\n`)
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, req, operation, previousDoc }) => {
+        console.log(`\n🔄 [Accounts.afterChange] 开始 - operation: ${operation}, accountId: ${doc.id}`)
+        console.log(`  👤 req.user: ${req.user ? req.user.id : 'null (无用户上下文)'}`)
+        console.log(`  📋 doc.users: ${JSON.stringify(doc.users)}`)
+        if (previousDoc) {
+          console.log(`  📋 previousDoc.users: ${JSON.stringify(previousDoc.users)}`)
+        }
+        console.log(`✅ [Accounts.afterChange] 完成\n`)
       },
     ],
   },

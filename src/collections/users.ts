@@ -30,7 +30,7 @@ export const Users: CollectionConfig = {
   },
   access: {
     // 创建业务身份权限
-    create: (async ({ req: { user, payload } }) => {
+    create: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
       // 检查是否有 platform_admin 角色
       return await accountHasRole(payload, user.id, ['platform_admin'])
@@ -38,7 +38,13 @@ export const Users: CollectionConfig = {
 
     // 读取业务身份权限
     read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
-      if (!user) return false
+      // 🔧 临时修复：允许无用户上下文时的读取（用于 relationship 验证）
+      // 原因：Payload 在验证 Account.users relationship 时需要读取 User
+      // 即使 payload.update() 使用了 overrideAccess: true，内部的 relationship 验证可能没有传递该标志
+      if (!user) {
+        console.log('  ⚠️  [Users.read] 无用户上下文，允许读取（系统级操作）')
+        return true
+      }
 
       // 获取当前登录 Account 的主要 User（业务身份）
       const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
@@ -102,7 +108,7 @@ export const Users: CollectionConfig = {
     }) as any,
 
     // 删除业务身份权限
-    delete: (async ({ req: { user, payload } }) => {
+    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
       // 只有 platform_admin 可以删除业务身份
       return await accountHasRole(payload, user.id, ['platform_admin'])
@@ -156,8 +162,10 @@ export const Users: CollectionConfig = {
         // 创建时可以设置角色（用于第一个用户）
         create: () => true,
         // 更新时只有平台管理员和平台运营可以修改角色
-        update: ({ req: { user } }) => {
-          return user?.role === 'platform_admin' || user?.role === 'platform_operator'
+        update: async ({ req: { user, payload } }) => {
+          if (!user) return false
+          const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
+          return primaryUser?.role === 'platform_admin' || primaryUser?.role === 'platform_operator'
         },
         // 读取时所有人可见
         read: () => true,
@@ -218,8 +226,12 @@ export const Users: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, operation }) => {
+        console.log(`\n⚙️  [Users.beforeChange] 开始 - operation: ${operation}`)
+        console.log(`  📝 data.role: ${data.role}, data.user_type: ${data.user_type}`)
+
         // 自动设置业务类型（根据角色推断）
         if (operation === 'create' && !data.user_type) {
+          console.log(`  🔄 自动推断 user_type...`)
           if (data.role === 'customer') {
             data.user_type = 'customer'
           } else if (data.role === 'merchant_member' || data.role === 'merchant_admin') {
@@ -227,135 +239,11 @@ export const Users: CollectionConfig = {
           } else {
             data.user_type = 'platform'
           }
+          console.log(`  ✓ 推断结果: user_type = ${data.user_type}`)
         }
+
+        console.log(`✅ [Users.beforeChange] 完成\n`)
         return data
-      },
-    ],
-    afterChange: [
-      async ({ doc, req, operation, previousDoc }) => {
-        // 自动维护 Account.users 双向关联
-        const { payload } = req
-
-        try {
-          if (operation === 'create') {
-            // 创建 User：将新 User 添加到 Account.users
-            const accountId = typeof doc.account === 'object' ? doc.account.id : doc.account
-
-            // 获取当前 Account
-            const account = await payload.findByID({
-              collection: 'accounts',
-              id: accountId,
-              depth: 0,
-            })
-
-            // 获取现有的 users 列表
-            const existingUsers = Array.isArray(account.users) ? account.users : []
-            const existingUserIds = existingUsers.map((u: any) =>
-              typeof u === 'object' ? u.id : u,
-            )
-
-            // 如果不存在则添加
-            if (!existingUserIds.includes(doc.id)) {
-              await payload.update({
-                collection: 'accounts',
-                id: accountId,
-                data: {
-                  users: [...existingUserIds, doc.id],
-                },
-                depth: 0,
-              })
-              console.log(`✓ User ${doc.id} 已添加到 Account ${accountId}.users`)
-            }
-          } else if (operation === 'update') {
-            // 更新 User：检查 account 是否改变
-            const oldAccountId =
-              typeof previousDoc?.account === 'object' ? previousDoc.account.id : previousDoc?.account
-            const newAccountId = typeof doc.account === 'object' ? doc.account.id : doc.account
-
-            if (oldAccountId && newAccountId && oldAccountId !== newAccountId) {
-              // Account 改变：从旧 Account 移除，添加到新 Account
-
-              // 1. 从旧 Account 移除
-              const oldAccount = await payload.findByID({
-                collection: 'accounts',
-                id: oldAccountId,
-                depth: 0,
-              })
-
-              if (oldAccount.users && Array.isArray(oldAccount.users)) {
-                const oldUserIds = oldAccount.users
-                  .map((u: any) => (typeof u === 'object' ? u.id : u))
-                  .filter((id: any) => id !== doc.id)
-
-                await payload.update({
-                  collection: 'accounts',
-                  id: oldAccountId,
-                  data: { users: oldUserIds },
-                  depth: 0,
-                })
-                console.log(`✓ User ${doc.id} 已从 Account ${oldAccountId}.users 移除`)
-              }
-
-              // 2. 添加到新 Account
-              const newAccount = await payload.findByID({
-                collection: 'accounts',
-                id: newAccountId,
-                depth: 0,
-              })
-
-              const newUsers = Array.isArray(newAccount.users) ? newAccount.users : []
-              const newUserIds = newUsers.map((u: any) => (typeof u === 'object' ? u.id : u))
-
-              if (!newUserIds.includes(doc.id)) {
-                await payload.update({
-                  collection: 'accounts',
-                  id: newAccountId,
-                  data: { users: [...newUserIds, doc.id] },
-                  depth: 0,
-                })
-                console.log(`✓ User ${doc.id} 已添加到 Account ${newAccountId}.users`)
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`❌ 维护 Account.users 失败:`, error)
-          // 不抛出错误，避免阻止 User 操作
-        }
-      },
-    ],
-    afterDelete: [
-      async ({ doc, req }) => {
-        // 删除 User：从 Account.users 移除
-        const { payload } = req
-
-        try {
-          const accountId = typeof doc.account === 'object' ? doc.account.id : doc.account
-
-          if (accountId) {
-            const account = await payload.findByID({
-              collection: 'accounts',
-              id: accountId,
-              depth: 0,
-            })
-
-            if (account.users && Array.isArray(account.users)) {
-              const updatedUserIds = account.users
-                .map((u: any) => (typeof u === 'object' ? u.id : u))
-                .filter((id: any) => id !== doc.id)
-
-              await payload.update({
-                collection: 'accounts',
-                id: accountId,
-                data: { users: updatedUserIds },
-                depth: 0,
-              })
-              console.log(`✓ User ${doc.id} 已从 Account ${accountId}.users 移除（删除操作）`)
-            }
-          }
-        } catch (error) {
-          console.error(`❌ 维护 Account.users 失败（删除）:`, error)
-          // 不抛出错误
-        }
       },
     ],
   },

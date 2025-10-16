@@ -21,7 +21,6 @@ import { merchantsData, merchantAccountsData, merchantUsersData } from './data/m
 import { skusData } from './data/skus'
 import { devicesData } from './data/devices'
 import { createOrderScenarios } from './scenarios/orders'
-import { syncAccountUsers, verifyAccountUserSync } from '../utils/syncAccountUsers'
 
 async function seed() {
   // ===== 安全检查 =====
@@ -763,17 +762,6 @@ async function seed() {
     })
     console.log(`   ✓ 创建了 3 条审计日志`)
 
-    // 13. 同步 Account ↔ User 双向关联
-    console.log('\n🔄 同步 Account ↔ User 双向关联...')
-    await syncAccountUsers(payload)
-
-    // 14. 验证数据一致性
-    console.log('\n🔍 验证数据一致性...')
-    const verifyResult = await verifyAccountUserSync(payload)
-    if (!verifyResult.valid) {
-      console.warn('⚠️  数据一致性验证失败，但继续完成 seed')
-    }
-
     // ===== 完成 =====
     console.log('\n✅ Seed 数据创建完成！')
     console.log('\n📊 数据统计:')
@@ -818,60 +806,7 @@ async function prepareDatabase(dbUri: string) {
   try {
     await client.connect()
 
-    // 1. 给 phone 为 null 的用户填充临时值（因为我们把 phone 改成了必填）
-    const updateResult = await client.query(`
-      UPDATE users
-      SET phone = CONCAT('temp_', id::text)
-      WHERE phone IS NULL
-    `)
-    if (updateResult.rowCount && updateResult.rowCount > 0) {
-      console.log(`   ✓ 修复了 ${updateResult.rowCount} 个用户的 phone 字段`)
-    }
 
-    // 2. 删除 merchant_role 列（如果存在）
-    await client.query(`
-      ALTER TABLE users DROP COLUMN IF EXISTS merchant_role
-    `)
-    console.log(`   ✓ 删除了 merchant_role 字段（如果存在）`)
-
-    // 3. 删除已废弃的 Surcharges Collection 相关内容
-    // 从 Payments 统一管理所有支付后，Surcharges 已废弃
-    await client.query('DROP TABLE IF EXISTS surcharges CASCADE;')
-    console.log(`   ✓ 删除了 surcharges 表（已废弃）`)
-
-    await client.query('DROP TYPE IF EXISTS enum_surcharges_type CASCADE;')
-    await client.query('DROP TYPE IF EXISTS enum_surcharges_status CASCADE;')
-    console.log(`   ✓ 删除了 surcharges 相关枚举类型`)
-
-    // 4. 清理 orders_rels 中的 surcharges 关联（如果列存在）
-    const checkColumn = await client.query(`
-      SELECT column_name
-      FROM information_schema.columns
-      WHERE table_name = 'orders_rels' AND column_name = 'surcharges_id';
-    `)
-    if (checkColumn.rows.length > 0) {
-      await client.query(`
-        DELETE FROM orders_rels
-        WHERE surcharges_id IS NOT NULL;
-      `)
-      console.log(`   ✓ 清理了 orders 与 surcharges 的关联`)
-    }
-
-    // 5. 重建 Payments 表以避免字段迁移冲突
-    // 旧字段：amount_rent, amount_shipping, amount_total, refund_amount 等
-    // 新字段：type, amount, amount_detail_*, out_pay_no 等
-    await client.query('DROP TABLE IF EXISTS payments CASCADE;')
-    console.log(`   ✓ 删除了 payments 表（将重新创建）`)
-
-    await client.query('DROP TYPE IF EXISTS enum_payments_status CASCADE;')
-    await client.query('DROP TYPE IF EXISTS enum_payments_channel CASCADE;')
-    console.log(`   ✓ 删除了 payments 相关枚举类型（将重新创建）`)
-
-    // 6. 删除旧的 users_sessions 表（改为使用 accounts_sessions）
-    await client.query('DROP TABLE IF EXISTS users_sessions CASCADE;')
-    console.log(`   ✓ 删除了 users_sessions 表（改为 accounts_sessions）`)
-
-    // 7. 重建 Users 表和 Accounts 表（架构变更：Users 不再负责认证）
     // 先删除有外键依赖的表
     await client.query('DROP TABLE IF EXISTS user_merchant_credit CASCADE;')
     await client.query('DROP TABLE IF EXISTS audit_logs CASCADE;')
@@ -884,7 +819,6 @@ async function prepareDatabase(dbUri: string) {
     // 删除 users 和 accounts 表
     await client.query('DROP TABLE IF EXISTS users CASCADE;')
     await client.query('DROP TABLE IF EXISTS accounts CASCADE;')
-    console.log(`   ✓ 删除了 users 和 accounts 表（架构变更）`)
 
     // 删除相关枚举类型
     await client.query('DROP TYPE IF EXISTS enum_users_role CASCADE;')
@@ -892,7 +826,6 @@ async function prepareDatabase(dbUri: string) {
     await client.query('DROP TYPE IF EXISTS enum_users_kyc_status CASCADE;')
     await client.query('DROP TYPE IF EXISTS enum_users_user_type CASCADE;')
     await client.query('DROP TYPE IF EXISTS enum_accounts_status CASCADE;')
-    console.log(`   ✓ 删除了相关枚举类型（将重新创建）`)
 
   } catch (error) {
     console.warn('   ⚠️  预处理警告:', error)
@@ -919,8 +852,8 @@ async function cleanDatabase(payload: Payload) {
     'shipping-templates',
     'merchants',
     'categories',
-    'users',
-    'accounts',
+    'users',    // 必须先删除 users（有外键指向 accounts）
+    'accounts', // 后删除 accounts
     'media',
   ] as const
 
