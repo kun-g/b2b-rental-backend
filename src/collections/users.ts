@@ -1,5 +1,5 @@
 import type { CollectionConfig, AccessArgs } from 'payload'
-import { getPrimaryUserFromAccount, accountHasRole } from '../utils/getUserFromAccount'
+import { accountHasRole, getAccountMerchantId } from '../utils/getUserFromAccount'
 
 /**
  * Users Collection - 业务账号（业务身份）
@@ -38,28 +38,16 @@ export const Users: CollectionConfig = {
 
     // 读取业务身份权限
     read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
-      // 🔧 临时修复：允许无用户上下文时的读取（用于 relationship 验证）
-      // 原因：Payload 在验证 Account.users relationship 时需要读取 User
-      // 即使 payload.update() 使用了 overrideAccess: true，内部的 relationship 验证可能没有传递该标志
-      if (!user) {
-        console.log('  ⚠️  [Users.read] 无用户上下文，允许读取（系统级操作）')
-        return true
-      }
-
-      // 获取当前登录 Account 的主要 User（业务身份）
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
+      if (!user) return false
 
       // Platform admin 可以查看所有 Users
-      if (primaryUser.role === 'platform_admin' || primaryUser.role === 'platform_operator') {
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
 
       // 商户 admin 可以查看本商户的所有 Users
-      if (primaryUser.role === 'merchant_admin') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
-        if (!merchantId) return false
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
@@ -79,19 +67,14 @@ export const Users: CollectionConfig = {
     update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
-      const primaryUser = await getPrimaryUserFromAccount(payload, user.id)
-      if (!primaryUser) return false
-
       // Platform admin 可以更新所有 Users
-      if (primaryUser.role === 'platform_admin') {
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
 
       // 商户 admin 可以更新本商户的所有 Users
-      if (primaryUser.role === 'merchant_admin') {
-        const merchantId =
-          typeof primaryUser.merchant === 'object' ? primaryUser.merchant?.id : primaryUser.merchant
-        if (!merchantId) return false
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,

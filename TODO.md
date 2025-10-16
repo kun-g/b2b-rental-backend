@@ -7,8 +7,6 @@
 
 ### 优先级 P0（必须完成）
 
-- [ ] Payload 中间件：在认证时自动加载 primaryUser 到 req.user
-
 #### 1. Collections 字段对齐（基于文档 B2B_Collections_WithDesc.md）
 
 **Orders Collection 字段补充**（影响核心业务流程）
@@ -148,9 +146,7 @@
 ## 技术债务 🔧
 
 ### 代码优化
-- [ ] 抽取公共字段到 Mixin（如 timestamps、operator 等）
-- [ ] 抽取公共权限逻辑到 Helper 函数
-- [ ] 优化 Hooks 性能（避免重复查询）
+- [ ] 因为Account和User分开，现在鉴权要执行两次
 
 ### 测试
 - [ ] 单元测试（Collection Hooks）
@@ -238,9 +234,3 @@ pnpm start
 ```
 
 ---
-
-## 联系方式
-
-如有问题，请联系：
-- 技术负责人：[TODO]
-- 产品负责人：[TODO]
