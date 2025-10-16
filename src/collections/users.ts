@@ -208,12 +208,8 @@ export const Users: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, operation }) => {
-        console.log(`\n⚙️  [Users.beforeChange] 开始 - operation: ${operation}`)
-        console.log(`  📝 data.role: ${data.role}, data.user_type: ${data.user_type}`)
-
         // 自动设置业务类型（根据角色推断）
         if (operation === 'create' && !data.user_type) {
-          console.log(`  🔄 自动推断 user_type...`)
           if (data.role === 'customer') {
             data.user_type = 'customer'
           } else if (data.role === 'merchant_member' || data.role === 'merchant_admin') {
@@ -221,10 +217,7 @@ export const Users: CollectionConfig = {
           } else {
             data.user_type = 'platform'
           }
-          console.log(`  ✓ 推断结果: user_type = ${data.user_type}`)
         }
-
-        console.log(`✅ [Users.beforeChange] 完成\n`)
         return data
       },
     ],

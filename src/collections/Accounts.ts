@@ -161,31 +161,12 @@ export const Accounts: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, operation, req }) => {
-        console.log(`\n⚙️  [Accounts.beforeChange] 开始 - operation: ${operation}`)
-        console.log(`  📝 data.username: ${data.username}`)
-        console.log(`  👤 req.user: ${req.user ? req.user.id : 'null (无用户上下文)'}`)
-        console.log(`  📋 data.users: ${JSON.stringify(data.users)}`)
-        console.log(`  📋 data._verified: ${data._verified}`)
-
         // 记录登录时间
         if (operation === 'update' && data._verified) {
-          console.log(`  🔐 检测到登录验证，更新 last_login_at`)
           data.last_login_at = new Date().toISOString()
         }
 
-        console.log(`✅ [Accounts.beforeChange] 完成\n`)
         return data
-      },
-    ],
-    afterChange: [
-      async ({ doc, req, operation, previousDoc }) => {
-        console.log(`\n🔄 [Accounts.afterChange] 开始 - operation: ${operation}, accountId: ${doc.id}`)
-        console.log(`  👤 req.user: ${req.user ? req.user.id : 'null (无用户上下文)'}`)
-        console.log(`  📋 doc.users: ${JSON.stringify(doc.users)}`)
-        if (previousDoc) {
-          console.log(`  📋 previousDoc.users: ${JSON.stringify(previousDoc.users)}`)
-        }
-        console.log(`✅ [Accounts.afterChange] 完成\n`)
       },
     ],
   },
