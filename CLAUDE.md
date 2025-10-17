@@ -72,6 +72,10 @@ pnpm seed --clean
 pnpm seed:clean
 ```
 
+**重要提示**：
+- 如果 `pnpm seed --clean` 失败（通常是外键约束问题），需要手动清空数据库
+- 手动清空方法参见下方"数据库清空与重建"章节
+
 **Seed 数据概览**：
 - **用户** (12个): 包括平台管理员、商户管理员、普通用户等各种角色
 - **商户** (3个): 优租设备、长租科技、租赁之家
@@ -293,6 +297,37 @@ podman exec cms-db-workstation pnpm seed
 docker exec cms-db-workstation pnpm seed
 ```
 
+#### 问题：pnpm seed --clean 失败，提示外键约束错误
+
+**典型错误信息**：
+```
+insert or update on table "payments" violates foreign key constraint "payments_order_id_orders_id_fk"
+```
+
+**原因**：数据库存在遗留数据导致外键约束冲突，无法正常清空。
+
+**解决方案**：手动清空数据库 schema 后重新 seed
+
+```bash
+# 预发布/生产环境（Docker）
+# 1. 清空数据库
+docker exec rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# 2. 重新 seed
+docker exec cms-db-workstation pnpm seed
+
+# 本地开发环境（Podman）
+# 1. 清空数据库
+podman exec <数据库容器名> psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# 2. 重新 seed
+podman exec cms-db-workstation pnpm seed
+```
+
+**为什么这样更可靠？**
+- `DROP SCHEMA public CASCADE` 会删除所有表、类型、约束等，不会有遗留数据
+- 避免了复杂的外键依赖问题
+
 ### 开发相关问题
 
 #### 类型检查失败导致构建失败
@@ -314,22 +349,28 @@ SKIP_TYPE_CHECK=true pnpm build
 
 **必须选择 `platform_admin` 角色**，否则无法管理系统。
 
-如果选错，可以通过工作站修复（根据环境选择命令）：
+如果选错，可以修复（根据环境选择命令）：
 
 ```bash
 # 本地开发环境（Podman）
-# 方法1：直接修改用户角色
-podman exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h <数据库容器名> -U postgress -d cms -c "UPDATE users SET role = '\''platform_admin'\'' WHERE username = '\''admin'\'';"'
+# 方法1：直接修改用户角色（进入数据库容器）
+podman exec <数据库容器名> psql -U postgress -d cms -c "UPDATE users SET role = 'platform_admin' WHERE username = 'admin';"
 
 # 方法2：清空重建（会删除所有数据）
-podman exec cms-db-workstation pnpm seed --clean
+# 先清空
+podman exec <数据库容器名> psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+# 再 seed
+podman exec cms-db-workstation pnpm seed
 
 # 预发布/生产环境（Docker）
-# 方法1：直接修改用户角色（预发布环境）
-docker exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk -U postgress -d cms -c "UPDATE users SET role = '\''platform_admin'\'' WHERE username = '\''admin'\'';"'
+# 方法1：直接修改用户角色（进入数据库容器）
+docker exec rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk psql -U postgress -d cms -c "UPDATE users SET role = 'platform_admin' WHERE username = 'admin';"
 
 # 方法2：清空重建（会删除所有数据）
-docker exec cms-db-workstation pnpm seed --clean
+# 先清空
+docker exec rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+# 再 seed
+docker exec cms-db-workstation pnpm seed
 ```
 
 ## 调试技巧
@@ -406,12 +447,25 @@ docker exec cms-db-workstation env | grep -E "DATABASE|NODE_ENV"          # 工�
 ### 常见操作
 
 ```bash
-# 清空数据库
-psql -U postgres -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+# 1. 清空数据库（推荐方法 - 进入数据库容器）
+# 本地开发环境（Podman）
+podman exec <数据库容器名> psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-# seed
-pnpm seed --clean
+# 预发布/生产环境（Docker）
+docker exec rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# 2. 然后从工作站容器执行 seed
+# 本地开发环境（Podman）
+podman exec cms-db-workstation pnpm seed
+
+# 预发布/生产环境（Docker）
+docker exec cms-db-workstation pnpm seed
 ```
+
+**为什么要进入数据库容器清空？**
+- 工作站容器没有安装 `psql` 工具
+- 直接在数据库容器执行 psql 命令最可靠
+- `pnpm seed --clean` 可能因外键约束失败，需要手动清空
 
 ## 相关文档
 
@@ -470,6 +524,25 @@ docker exec cms-db-workstation pnpm seed
 docker exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk -U postgress -d cms -c "SELECT COUNT(*) FROM users;"'
 ```
 
+#### 数据库清空与重建（预发布/生产环境）
+
+当需要完全清空数据库并重新初始化时：
+
+```bash
+# 1. 清空数据库（进入数据库容器执行）
+docker exec rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# 2. 重新初始化（从工作站容器执行）
+docker exec cms-db-workstation pnpm seed
+
+# 3. 验证
+docker exec rent-database-gvfzwv.1.n495txe9mw7riip8ox4zfcyqk psql -U postgress -d cms -c "SELECT COUNT(*) FROM users;"
+```
+
+**为什么不用 `pnpm seed --clean`？**
+- 该命令在有外键约束冲突时会失败
+- 手动清空 schema 更可靠
+
 #### 本地开发环境初始化
 
 ```bash
@@ -478,6 +551,19 @@ podman exec cms-db-workstation pnpm seed
 
 # 验证（根据实际数据库容器名称调整）
 podman exec cms-db-workstation sh -c 'PGPASSWORD=$DB_PASSWORD psql -h <数据库容器名> -U postgress -d cms -c "SELECT COUNT(*) FROM users;"'
+```
+
+#### 数据库清空与重建（本地开发环境）
+
+```bash
+# 1. 清空数据库
+podman exec <数据库容器名> psql -U postgress -d cms -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# 2. 重新初始化
+podman exec cms-db-workstation pnpm seed
+
+# 3. 验证
+podman exec <数据库容器名> psql -U postgress -d cms -c "SELECT COUNT(*) FROM users;"
 ```
 
 ### Docker 配置要点

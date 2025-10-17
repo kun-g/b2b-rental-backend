@@ -11,7 +11,25 @@ export default async function HomePage() {
   const headers = await getHeaders()
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
-  const { user } = await payload.auth({ headers })
+  const { user: account } = await payload.auth({ headers })
+
+  // 查询关联的 User（业务身份）
+  let customerUser = null
+  if (account) {
+    const users = await payload.find({
+      collection: 'users',
+      where: {
+        account: {
+          equals: account.id,
+        },
+        role: {
+          equals: 'customer',
+        },
+      },
+      limit: 1,
+    })
+    customerUser = users.docs[0] || null
+  }
 
   const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
 
@@ -27,10 +45,10 @@ export default async function HomePage() {
             width={65}
           />
         </picture>
-        {!user && <h1>Welcome to your new project.</h1>}
-        {user && <h1>Welcome back, {user.username || user.email}</h1>}
+        {!account && <h1>Welcome to your new project.</h1>}
+        {account && <h1>Welcome back, {account.username || account.email}</h1>}
         <div className="links">
-          {user && user.role === 'customer' && (
+          {customerUser && (
             <a className="admin" href="/use-invitation">
               使用邀请码获得授信
             </a>

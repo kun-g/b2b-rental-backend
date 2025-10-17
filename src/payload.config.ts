@@ -1,6 +1,6 @@
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { sqliteAdapter } from '@payloadcms/db-sqlite'
+// 注意：sqliteAdapter 使用动态 import，避免生产环境加载不需要的模块
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
@@ -29,20 +29,32 @@ const dirname = path.dirname(filename)
 
 /**
  * 根据环境选择数据库适配器
- * - 测试环境: SQLite (内存模式，速度快，完全隔离)
+ * - 测试环境: SQLite (内存模式，速度快，完全隔离) - 需要安装 @payloadcms/db-sqlite
  * - 开发/生产: PostgreSQL (功能完整)
+ *
+ * 注意：生产环境不安装 SQLite 依赖，测试需要在开发环境运行
  */
 function getDatabaseAdapter() {
   const isTest = process.env.NODE_ENV === 'test'
 
   if (isTest) {
     // 测试环境：使用 SQLite 内存数据库（速度快，完全隔离）
-    return sqliteAdapter({
-      client: {
-        url: ':memory:', // 内存数据库
-      },
-      push: true, // 自动同步 schema
-    })
+    // 如果在生产环境尝试运行测试会失败（因为没有安装 better-sqlite3）
+    try {
+      // 动态 require 避免生产构建时加载
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { sqliteAdapter } = require('@payloadcms/db-sqlite')
+      return sqliteAdapter({
+        client: {
+          url: ':memory:', // 内存数据库
+        },
+        push: true, // 自动同步 schema
+      })
+    } catch (_error) {
+      throw new Error(
+        '测试环境需要 SQLite 依赖。请在开发环境运行测试，或安装依赖：pnpm add -D @payloadcms/db-sqlite better-sqlite3'
+      )
+    }
   }
 
   // 开发/生产环境：使用 PostgreSQL
