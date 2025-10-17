@@ -345,7 +345,6 @@ SELECT username, role FROM users WHERE username = 'admin';
 ## 下一步
 
 - [ ] 阅读 [AUTH_GUIDE.md](./AUTH_GUIDE.md) 了解认证系统
-- [ ] 阅读 [COLLECTIONS.md](./COLLECTIONS.md) 了解数据模型
 - [ ] 阅读 [TODO.md](./TODO.md) 查看开发任务
 
 祝你使用愉快！🎉

@@ -11,7 +11,6 @@
 	- account增加users字段，与账号类型进行关联 
 - 10-14更新
 	- 结合当前设计，参考原设计对collections进行了更新
-https://github.com/kun-g/b2b-rental-backend/blob/main/docs/COLLECTIONS.md
 	- 修改了的device的状态
 	- 更新了字段命名以及相关内容关联的主键
  	- user增加account(账号类型)，订单管理增加logistics_id（租赁平台的物流ID）

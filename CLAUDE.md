@@ -133,7 +133,6 @@ src/
 
 docs/                    # 详细文档
 ├── QUICK_START.md      # 快速开始指南
-├── COLLECTIONS.md      # 数据模型设计文档
 ├── AUTH_GUIDE.md       # 认证系统指南
 ├── CREDIT_INVITATION_FLOW.md  # 授信邀请码流程
 └── ...
@@ -419,7 +418,6 @@ pnpm seed --clean
 所有详细文档都在 `./docs` 目录：
 
 - **QUICK_START.md** - 快速开始和首次设置
-- **COLLECTIONS.md** - 数据模型设计文档（必读）
 - **AUTH_GUIDE.md** - 认证系统和角色权限
 - **CREDIT_INVITATION_FLOW.md** - 授信邀请码业务流程
 - **DATABASE_SETUP.md** - 数据库配置
