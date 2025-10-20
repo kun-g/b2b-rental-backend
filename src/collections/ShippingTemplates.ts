@@ -1,5 +1,9 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
+import {
+  accountHasRole,
+  getAccountMerchantId,
+  getUserCreditedMerchantIds,
+} from '../utils/accountUtils'
 
 /**
  * ShippingTemplates Collection - 运费模板（商户×商户SKU）
@@ -32,34 +36,9 @@ export const ShippingTemplates: CollectionConfig = {
       }
 
       // 普通用户可以看到有授信的商户的模板
-      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
-      if (customerUser) {
-        // 查询该用户的所有启用状态的授信记录
-        const credits = await payload.find({
-          collection: 'user-merchant-credit',
-          where: {
-            user: {
-              equals: customerUser.id,
-            },
-            status: {
-              equals: 'active', // 只查询启用状态的授信
-            },
-          },
-          limit: 1000, // 假设一个用户不会有超过1000个授信
-          depth: 0,
-        })
+      const merchantIds = await getUserCreditedMerchantIds(payload, user.id)
 
-        // 提取所有有授信的商户 ID
-        const merchantIds = credits.docs
-          .map((credit) =>
-            typeof credit.merchant === 'object' ? credit.merchant?.id : credit.merchant,
-          )
-          .filter(Boolean)
-
-        if (merchantIds.length === 0) {
-          return false
-        }
-
+      if (merchantIds.length > 0) {
         return {
           merchant: {
             in: merchantIds,

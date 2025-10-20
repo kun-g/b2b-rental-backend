@@ -2,8 +2,8 @@ import type { AccessArgs, CollectionConfig } from 'payload'
 import {
   accountHasRole,
   getAccountMerchantId,
-  getUserFromAccount,
-  canViewPlatformOnlyField
+  getUserCreditedMerchantIds,
+  canViewPlatformOnlyField,
 } from '../utils/accountUtils'
 
 /**
@@ -37,48 +37,27 @@ export const MerchantSKUs: CollectionConfig = {
       }
 
       // 普通用户只能查看有授信的商户的已上架SKU
-      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+      const merchantIds = await getUserCreditedMerchantIds(payload, user.id)
 
-      if (customerUser) {
-        // 查询该用户的所有有效授信记录
-        const credits = await payload.find({
-          collection: 'user-merchant-credit',
-          where: {
-            user: {
-              equals: customerUser.id,
+      if (merchantIds.length > 0) {
+        return {
+          and: [
+            {
+              merchant: {
+                in: merchantIds,
+              },
             },
-            status: {
-              equals: 'active',
+            {
+              is_listed: {
+                equals: true,
+              },
             },
-          },
-          limit: 1000,
-        })
-
-        // 提取有授信的商户ID列表
-        const merchantIds = credits.docs.map((credit: any) => {
-          return typeof credit.merchant === 'object' ? credit.merchant.id : credit.merchant
-        })
-
-        if (merchantIds.length > 0) {
-          return {
-            and: [
-              {
-                merchant: {
-                  in: merchantIds,
-                },
+            {
+              listing_status: {
+                equals: 'approved',
               },
-              {
-                is_listed: {
-                  equals: true,
-                },
-              },
-              {
-                listing_status: {
-                  equals: 'approved',
-                },
-              },
-            ],
-          }
+            },
+          ],
         }
       }
 

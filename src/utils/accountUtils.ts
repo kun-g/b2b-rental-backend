@@ -170,3 +170,60 @@ export async function canViewPlatformOnlyField({ req: { user, payload } }: any):
   if (!user) return false
   return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
 }
+
+/**
+ * 获取用户有授信的商户 ID 列表
+ * - 只返回 status: 'active' 的授信
+ * - 如果用户没有 customer 角色或没有授信，返回空数组
+ * - 用于访问控制：限制用户只能查看有授信的商户及其相关资源
+ *
+ * @param payload - Payload 实例
+ * @param accountId - Account ID
+ * @returns 商户 ID 数组（string[] | number[]）
+ *
+ * @example
+ * // 在访问控制中使用
+ * const merchantIds = await getUserCreditedMerchantIds(payload, user.id)
+ * if (merchantIds.length === 0) {
+ *   return false
+ * }
+ * return {
+ *   merchant: { in: merchantIds }
+ * }
+ */
+export async function getUserCreditedMerchantIds(
+  payload: Payload,
+  accountId: string | number,
+): Promise<Array<string | number>> {
+  // 获取该账号的 customer User
+  const customerUser = await getUserFromAccount(payload, accountId, ['customer'])
+
+  if (!customerUser) {
+    return []
+  }
+
+  // 查询该用户的所有启用状态的授信记录
+  const credits = await payload.find({
+    collection: 'user-merchant-credit',
+    where: {
+      user: {
+        equals: customerUser.id,
+      },
+      status: {
+        equals: 'active',
+      },
+    },
+    limit: 1000, // 假设一个用户不会有超过1000个授信
+    depth: 0, // 不需要关联查询，提高性能
+  })
+
+  // 提取所有有授信的商户 ID
+  const merchantIds = credits.docs
+    .map((credit: any) => {
+      // 处理 relationship 字段可能是 object 或 id 的情况
+      return typeof credit.merchant === 'object' ? credit.merchant?.id : credit.merchant
+    })
+    .filter(Boolean) // 过滤掉 undefined/null
+
+  return merchantIds
+}

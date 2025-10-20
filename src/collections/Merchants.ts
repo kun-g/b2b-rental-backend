@@ -3,7 +3,8 @@ import {
   accountHasRole,
   getAccountMerchantId,
   canViewMerchantSensitiveField,
-  canViewPlatformOnlyField
+  canViewPlatformOnlyField,
+  getUserCreditedMerchantIds,
 } from '../utils/accountUtils'
 
 /**
@@ -37,35 +38,13 @@ export const Merchants: CollectionConfig = {
       }
 
       // 普通用户可以查看有授信的商户（用于下单时选择商户）
-      const { getUserFromAccount } = await import('../utils/accountUtils')
-      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+      const merchantIds = await getUserCreditedMerchantIds(payload, user.id)
 
-      if (customerUser) {
-        // 查询该用户的所有有效授信记录
-        const credits = await payload.find({
-          collection: 'user-merchant-credit',
-          where: {
-            user: {
-              equals: customerUser.id,
-            },
-            status: {
-              equals: 'active',
-            },
+      if (merchantIds.length > 0) {
+        return {
+          id: {
+            in: merchantIds,
           },
-          limit: 1000,
-        })
-
-        // 提取有授信的商户ID列表
-        const merchantIds = credits.docs.map((credit: any) => {
-          return typeof credit.merchant === 'object' ? credit.merchant.id : credit.merchant
-        })
-
-        if (merchantIds.length > 0) {
-          return {
-            id: {
-              in: merchantIds,
-            },
-          }
         }
       }
 
