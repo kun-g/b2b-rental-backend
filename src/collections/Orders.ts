@@ -505,6 +505,25 @@ export const Orders: CollectionConfig = {
           data.order_no = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
           data.order_creat_at = new Date().toISOString()
 
+          // 自动验证并填充 customer 字段（安全性增强）
+          if (req.user) {
+            const { getUserFromAccount } = await import('../utils/accountUtils')
+            const customerUser = await getUserFromAccount(req.payload, req.user.id, ['customer'])
+
+            if (!customerUser) {
+              throw new Error('当前账号没有 customer 角色，无法创建订单')
+            }
+
+            // 验证前端传来的 customer 是否匹配当前登录用户
+            const requestedCustomerId = typeof data.customer === 'object' ? data.customer.id : data.customer
+            if (requestedCustomerId && String(requestedCustomerId) !== String(customerUser.id)) {
+              throw new Error('无法为其他用户创建订单')
+            }
+
+            // 自动填充 customer 字段
+            data.customer = customerUser.id
+          }
+
           // 从 SKU 中获取商户、价格快照等信息
           if (data.merchant_sku) {
             const skuId = typeof data.merchant_sku === 'object' ? data.merchant_sku.id : data.merchant_sku

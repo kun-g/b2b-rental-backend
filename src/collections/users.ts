@@ -207,7 +207,27 @@ export const Users: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      async ({ data, operation }) => {
+      async ({ data, operation, req }) => {
+        // 创建时验证：同一个 Account 不能有多个同角色的 User
+        if (operation === 'create' && data.account && data.role) {
+          const accountId = typeof data.account === 'object' ? data.account.id : data.account
+
+          const existing = await req.payload.find({
+            collection: 'users',
+            where: {
+              and: [
+                { account: { equals: accountId } },
+                { role: { equals: data.role } },
+              ],
+            },
+            limit: 1,
+          })
+
+          if (existing.totalDocs > 0) {
+            throw new Error(`该账号已经有 ${data.role} 角色的业务身份，不能重复创建`)
+          }
+        }
+
         // 自动设置业务类型（根据角色推断）
         if (operation === 'create' && !data.user_type) {
           if (data.role === 'customer') {
