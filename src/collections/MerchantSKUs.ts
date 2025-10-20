@@ -1,5 +1,10 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { accountHasRole, getAccountMerchantId, getUserFromAccount } from '../utils/accountUtils'
+import {
+  accountHasRole,
+  getAccountMerchantId,
+  getUserFromAccount,
+  canViewPlatformOnlyField
+} from '../utils/accountUtils'
 
 /**
  * MerchantSKUs Collection - 商户SKU（商户自建，归属类目）
@@ -31,9 +36,53 @@ export const MerchantSKUs: CollectionConfig = {
         }
       }
 
-      // 用户端需要根据授信关系过滤，MVP阶段先返回所有已上架的
-      // TODO: 后续需要通过 UserMerchantCredit 查询授信关系
-      return true
+      // 普通用户只能查看有授信的商户的已上架SKU
+      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+
+      if (customerUser) {
+        // 查询该用户的所有有效授信记录
+        const credits = await payload.find({
+          collection: 'user-merchant-credit',
+          where: {
+            user: {
+              equals: customerUser.id,
+            },
+            status: {
+              equals: 'active',
+            },
+          },
+          limit: 1000,
+        })
+
+        // 提取有授信的商户ID列表
+        const merchantIds = credits.docs.map((credit: any) => {
+          return typeof credit.merchant === 'object' ? credit.merchant.id : credit.merchant
+        })
+
+        if (merchantIds.length > 0) {
+          return {
+            and: [
+              {
+                merchant: {
+                  in: merchantIds,
+                },
+              },
+              {
+                is_listed: {
+                  equals: true,
+                },
+              },
+              {
+                listing_status: {
+                  equals: 'approved',
+                },
+              },
+            ],
+          }
+        }
+      }
+
+      return false
     }) as any,
     create: (async ({ req: { user, payload } }) => {
       if (!user) return false
@@ -190,6 +239,19 @@ export const MerchantSKUs: CollectionConfig = {
       admin: {
         description: 'MVP默认需平台审核后才能上架',
       },
+      access: {
+        // 只有平台和商户可以查看上架状态
+        read: async ({ req: { user, payload } }) => {
+          if (!user) return false
+          // 平台角色可以查看
+          if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
+            return true
+          }
+          // 商户角色可以查看
+          const merchantId = await getAccountMerchantId(payload, user.id, [])
+          return !!merchantId
+        },
+      },
     },
     {
       name: 'rejection_reason',
@@ -197,6 +259,9 @@ export const MerchantSKUs: CollectionConfig = {
       label: '拒绝原因',
       admin: {
         condition: (data) => data.listing_status === 'rejected',
+      },
+      access: {
+        read: canViewPlatformOnlyField,
       },
     },
     {
@@ -226,6 +291,9 @@ export const MerchantSKUs: CollectionConfig = {
       admin: {
         readOnly: true,
       },
+      access: {
+        read: canViewPlatformOnlyField,
+      },
     },
     {
       name: 'updated_by',
@@ -234,6 +302,9 @@ export const MerchantSKUs: CollectionConfig = {
       label: '更新人',
       admin: {
         readOnly: true,
+      },
+      access: {
+        read: canViewPlatformOnlyField,
       },
     },
   ],

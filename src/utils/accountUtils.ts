@@ -146,3 +146,27 @@ export async function getAccountMerchantId(
 
   return merchantId || null
 }
+
+/**
+ * 字段级访问控制：平台角色和商户自己可以查看
+ * 用于敏感商户信息（联系方式、结算账户等）
+ */
+export async function canViewMerchantSensitiveField({ req: { user, payload } }: any): Promise<boolean> {
+  if (!user) return false
+  // 平台角色可以查看
+  if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
+    return true
+  }
+  // 商户角色可以查看自己的信息
+  const merchantId = await getAccountMerchantId(payload, user.id, [])
+  return !!merchantId
+}
+
+/**
+ * 字段级访问控制：只有平台角色可以查看
+ * 用于平台内部信息（邀请码、审核记录、内部备注等）
+ */
+export async function canViewPlatformOnlyField({ req: { user, payload } }: any): Promise<boolean> {
+  if (!user) return false
+  return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+}

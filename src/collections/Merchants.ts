@@ -1,5 +1,10 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
-import { accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
+import {
+  accountHasRole,
+  getAccountMerchantId,
+  canViewMerchantSensitiveField,
+  canViewPlatformOnlyField
+} from '../utils/accountUtils'
 
 /**
  * Merchants Collection - 商户管理
@@ -28,6 +33,39 @@ export const Merchants: CollectionConfig = {
           id: {
             equals: merchantId,
           },
+        }
+      }
+
+      // 普通用户可以查看有授信的商户（用于下单时选择商户）
+      const { getUserFromAccount } = await import('../utils/accountUtils')
+      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+
+      if (customerUser) {
+        // 查询该用户的所有有效授信记录
+        const credits = await payload.find({
+          collection: 'user-merchant-credit',
+          where: {
+            user: {
+              equals: customerUser.id,
+            },
+            status: {
+              equals: 'active',
+            },
+          },
+          limit: 1000,
+        })
+
+        // 提取有授信的商户ID列表
+        const merchantIds = credits.docs.map((credit: any) => {
+          return typeof credit.merchant === 'object' ? credit.merchant.id : credit.merchant
+        })
+
+        if (merchantIds.length > 0) {
+          return {
+            id: {
+              in: merchantIds,
+            },
+          }
         }
       }
 
@@ -63,6 +101,9 @@ export const Merchants: CollectionConfig = {
       name: 'contact',
       type: 'group',
       label: '联系信息',
+      access: {
+        read: canViewMerchantSensitiveField,
+      },
       fields: [
         {
           name: 'name',
@@ -90,6 +131,9 @@ export const Merchants: CollectionConfig = {
       admin: {
         description: '用于对账和打款',
       },
+      access: {
+        read: canViewMerchantSensitiveField,
+      },
       fields: [
         {
           name: 'account_name',
@@ -116,6 +160,9 @@ export const Merchants: CollectionConfig = {
       admin: {
         description: '上传营业执照扫描件',
       },
+      access: {
+        read: canViewMerchantSensitiveField,
+      },
     },
     {
       name: 'address',
@@ -123,6 +170,9 @@ export const Merchants: CollectionConfig = {
       label: '商户办公地址',
       admin: {
         description: '商户的办公地址',
+      },
+      access: {
+        read: canViewMerchantSensitiveField,
       },
     },
     {
@@ -146,6 +196,9 @@ export const Merchants: CollectionConfig = {
         description: '平台生成的唯一邀请码',
         readOnly: true,
       },
+      access: {
+        read: canViewPlatformOnlyField,
+      },
     },
     {
       name: 'invited_by',
@@ -154,6 +207,9 @@ export const Merchants: CollectionConfig = {
       label: '邀请人',
       admin: {
         description: '平台运营人员',
+      },
+      access: {
+        read: canViewPlatformOnlyField,
       },
     },
     {
@@ -165,6 +221,9 @@ export const Merchants: CollectionConfig = {
           pickerAppearance: 'dayAndTime',
         },
       },
+      access: {
+        read: canViewPlatformOnlyField,
+      },
     },
     {
       name: 'approved_at',
@@ -175,12 +234,18 @@ export const Merchants: CollectionConfig = {
           pickerAppearance: 'dayAndTime',
         },
       },
+      access: {
+        read: canViewPlatformOnlyField,
+      },
     },
     {
       name: 'approved_by',
       type: 'relationship',
       relationTo: 'users',
       label: '审核人',
+      access: {
+        read: canViewPlatformOnlyField,
+      },
     },
     {
       name: 'rejection_reason',
@@ -189,6 +254,9 @@ export const Merchants: CollectionConfig = {
       admin: {
         condition: (data) => data.status === 'rejected',
       },
+      access: {
+        read: canViewPlatformOnlyField,
+      },
     },
     {
       name: 'notes',
@@ -196,6 +264,9 @@ export const Merchants: CollectionConfig = {
       label: '备注',
       admin: {
         description: '内部备注，商户不可见',
+      },
+      access: {
+        read: canViewPlatformOnlyField,
       },
     },
   ],

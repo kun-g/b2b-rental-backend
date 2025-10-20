@@ -1,4 +1,5 @@
-import type { CollectionConfig } from 'payload'
+import type { AccessArgs, CollectionConfig } from 'payload'
+import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
 /**
  * ShippingTemplates Collection - 运费模板（商户×商户SKU）
@@ -12,20 +13,62 @@ export const ShippingTemplates: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
+    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+      if (!user) return false
+
+      // 平台角色可以查看所有模板
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能看到自己商户的模板
+      const merchantId = await getAccountMerchantId(payload, user.id, [])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
           },
         }
       }
+
+      // 普通用户可以看到有授信的商户的模板
+      const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+      if (customerUser) {
+        // 查询该用户的所有启用状态的授信记录
+        const credits = await payload.find({
+          collection: 'user-merchant-credit',
+          where: {
+            user: {
+              equals: customerUser.id,
+            },
+            status: {
+              equals: 'active', // 只查询启用状态的授信
+            },
+          },
+          limit: 1000, // 假设一个用户不会有超过1000个授信
+          depth: 0,
+        })
+
+        // 提取所有有授信的商户 ID
+        const merchantIds = credits.docs
+          .map((credit) =>
+            typeof credit.merchant === 'object' ? credit.merchant?.id : credit.merchant,
+          )
+          .filter(Boolean)
+
+        if (merchantIds.length === 0) {
+          return false
+        }
+
+        return {
+          merchant: {
+            in: merchantIds,
+          },
+        }
+      }
+
       return false
-    },
+    }) as any,
     create: ({ req: { user } }) => {
       return user?.role === 'merchant_admin' || user?.role === 'merchant_member'
     },
