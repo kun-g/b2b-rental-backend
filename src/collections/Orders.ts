@@ -659,8 +659,17 @@ export const Orders: CollectionConfig = {
           const endDate = new Date(data.rent_end_date)
           data.rent_days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
 
-          // 冻结授信金额
+          // 设置授信冻结金额
           data.credit_hold_amount = data.device_value_snapshot
+
+          // 实际冻结授信额度
+          const { freezeCredit } = await import('../utils/creditUtils')
+          await freezeCredit(
+            req.payload,
+            data.customer,
+            data.merchant,
+            data.credit_hold_amount,
+          )
         }
 
         // 记录状态流转
@@ -699,15 +708,37 @@ export const Orders: CollectionConfig = {
       },
     ],
     afterChange: [
-      async ({ doc, req: _req, operation, previousDoc }) => {
+      async ({ doc, req, operation, previousDoc }) => {
+        const { releaseCredit } = await import('../utils/creditUtils')
+
         // 订单完成时释放授信
         if (operation === 'update' && previousDoc.status !== 'COMPLETED' && doc.status === 'COMPLETED') {
-          // TODO: 调用授信释放逻辑
+          if (doc.credit_hold_amount && doc.credit_hold_amount > 0) {
+            const customerId = typeof doc.customer === 'object' ? doc.customer.id : doc.customer
+            const merchantId = typeof doc.merchant === 'object' ? doc.merchant.id : doc.merchant
+
+            await releaseCredit(
+              req.payload,
+              customerId,
+              merchantId,
+              doc.credit_hold_amount,
+            )
+          }
         }
 
         // 订单取消时释放授信
         if (operation === 'update' && previousDoc.status !== 'CANCELED' && doc.status === 'CANCELED') {
-          // TODO: 调用授信释放逻辑
+          if (doc.credit_hold_amount && doc.credit_hold_amount > 0) {
+            const customerId = typeof doc.customer === 'object' ? doc.customer.id : doc.customer
+            const merchantId = typeof doc.merchant === 'object' ? doc.merchant.id : doc.merchant
+
+            await releaseCredit(
+              req.payload,
+              customerId,
+              merchantId,
+              doc.credit_hold_amount,
+            )
+          }
         }
       },
     ],
