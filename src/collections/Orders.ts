@@ -1,4 +1,5 @@
 import type { AccessArgs, CollectionConfig } from 'payload'
+import { APIError } from 'payload'
 import { calculateShippingFee } from '../utils/calculateShipping'
 import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
@@ -511,13 +512,13 @@ export const Orders: CollectionConfig = {
             const customerUser = await getUserFromAccount(req.payload, req.user.id, ['customer'])
 
             if (!customerUser) {
-              throw new Error('当前账号没有 customer 角色，无法创建订单')
+              throw new APIError('当前账号没有 customer 角色，无法创建订单', 400)
             }
 
             // 验证前端传来的 customer 是否匹配当前登录用户
             const requestedCustomerId = typeof data.customer === 'object' ? data.customer.id : data.customer
             if (requestedCustomerId && String(requestedCustomerId) !== String(customerUser.id)) {
-              throw new Error('无法为其他用户创建订单')
+              throw new APIError('无法为其他用户创建订单', 403)
             }
 
             // 自动填充 customer 字段
@@ -618,27 +619,28 @@ export const Orders: CollectionConfig = {
 
                 // 最终验证：必须有省市区
                 if (!data.shipping_address.province) {
-                  throw new Error('收货地址缺少省份信息，请检查地址格式')
+                  throw new APIError('收货地址缺少省份信息，请检查地址格式', 400)
                 }
 
                 if (!data.shipping_address.city) {
-                  throw new Error('收货地址缺少城市信息，请检查地址格式')
+                  throw new APIError('收货地址缺少城市信息，请检查地址格式', 400)
                 }
 
                 if (!data.shipping_address.district) {
-                  throw new Error(
-                    `收货地址缺少区县信息。当前地址：${fullAddress}，请提供完整的省市区信息`
+                  throw new APIError(
+                    `收货地址缺少区县信息。当前地址：${fullAddress}，请提供完整的省市区信息`,
+                    400,
                   )
                 }
 
                 // 验证联系信息
                 if (!data.shipping_address.contact_name || !data.shipping_address.contact_phone) {
-                  throw new Error('收货地址缺少联系人或联系电话')
+                  throw new APIError('收货地址缺少联系人或联系电话', 400)
                 }
 
                 // 验证详细地址
                 if (!data.shipping_address.address || data.shipping_address.address.trim() === '') {
-                  throw new Error('请提供详细的收货地址（街道、门牌号等）')
+                  throw new APIError('请提供详细的收货地址（街道、门牌号等）', 400)
                 }
               }
 
@@ -655,8 +657,9 @@ export const Orders: CollectionConfig = {
 
                   // 检查是否为黑名单地区
                   if (shippingResult.isBlacklisted) {
-                    throw new Error(
+                    throw new APIError(
                       `该地址不在配送范围内: ${shippingResult.blacklistReason || '该地区不发货'}`,
+                      400,
                     )
                   }
 
@@ -664,7 +667,7 @@ export const Orders: CollectionConfig = {
                   data.shipping_fee_snapshot = shippingResult.fee
                 }
               } else if (!shippingTemplateId) {
-                throw new Error('无法找到可用的运费模板，请联系商户')
+                throw new APIError('无法找到可用的运费模板，请联系商户', 400)
               }
             }
           }
@@ -708,7 +711,7 @@ export const Orders: CollectionConfig = {
                 address: defaultReturnInfo.return_address.address,
               }
             } else {
-              throw new Error('商户未设置归还地址，请联系商户')
+              throw new APIError('商户未设置归还地址，请联系商户', 400)
             }
           }
 

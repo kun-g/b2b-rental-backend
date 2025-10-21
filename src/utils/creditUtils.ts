@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import { APIError } from 'payload'
 
 /**
  * 冻结授信额度
@@ -35,21 +36,22 @@ export async function freezeCredit(
   })
 
   if (creditRecords.docs.length === 0) {
-    throw new Error('未找到授信记录，无法下单')
+    throw new APIError('未找到授信记录，无法下单', 400)
   }
 
   const credit = creditRecords.docs[0]
 
   // 检查授信状态
   if (credit.status !== 'active') {
-    throw new Error(`授信状态不可用: ${credit.status}`)
+    throw new APIError(`授信状态不可用: ${credit.status}`, 400)
   }
 
   // 检查可用额度
   const availableCredit = (credit.credit_limit || 0) - (credit.used_credit || 0)
   if (availableCredit < amount) {
-    throw new Error(
+    throw new APIError(
       `授信额度不足。可用: ${availableCredit}元，需要: ${amount}元`,
+      400,
     )
   }
 
