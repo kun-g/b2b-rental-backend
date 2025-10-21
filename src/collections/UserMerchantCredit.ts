@@ -44,7 +44,7 @@ export const UserMerchantCredit: CollectionConfig = {
 
       return false
     }) as any,
-    create: (async ({ req: { user, payload } }) => {
+    create: (async ({ req: { user, payload } }: AccessArgs<any>) => {
       if (!user) return false
 
       // 只有商户管理员可以创建授信

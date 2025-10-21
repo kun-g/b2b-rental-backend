@@ -59,7 +59,8 @@
       "Bash(pnpm exec playwright:*)",
       "Read(//Users/guokun/.claude/**)",
       "Bash(git rm:*)",
-      "Bash(podman ps:*)"
+      "Bash(podman ps:*)",
+      "Bash(pnpm test:e2e orders-api.e2e.spec.ts)"
     ],
     "deny": [],
     "ask": []
