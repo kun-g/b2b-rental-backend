@@ -13,3 +13,6 @@ postgres-data
 
 playwright-report
 test-results
+
+
+settings.local.json
