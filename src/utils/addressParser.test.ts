@@ -186,6 +186,41 @@ describe('addressParser', () => {
     });
   });
 
+  describe('简称格式（省略后缀）', () => {
+    it('应该正确解析省略后缀的地址', () => {
+      const result = parseAddress('安徽宿州灵璧光明小区沿街403');
+      expect(result).toEqual({
+        province: '安徽省',
+        city: '宿州市',
+        district: '灵璧县',
+        street: '光明小区沿街403',
+      });
+    });
+
+    it('应该正确处理带中文括号的地址', () => {
+      // 移除括号后解析
+      const address = '【安徽宿州灵璧光明小区沿街403】';
+      const cleanAddress = address.replace(/[【】]/g, '');
+      const result = parseAddress(cleanAddress);
+      expect(result).toEqual({
+        province: '安徽省',
+        city: '宿州市',
+        district: '灵璧县',
+        street: '光明小区沿街403',
+      });
+    });
+
+    it('应该正确解析混合格式（省全称+市简称+区简称）', () => {
+      const result = parseAddress('广东省深圳南山科技园南路');
+      expect(result).toEqual({
+        province: '广东省',
+        city: '深圳市',
+        district: '南山区',
+        street: '科技园南路',
+      });
+    });
+  });
+
   describe('返回类型', () => {
     it('返回的对象应该有正确的类型', () => {
       const result = parseAddress('广东省深圳市南山区科技园南路');
