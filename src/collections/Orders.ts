@@ -584,6 +584,64 @@ export const Orders: CollectionConfig = {
               // 保存运费模板 ID
               data.shipping_template_id = shippingTemplateId
 
+              // 解析和验证收货地址
+              if (data.shipping_address) {
+                const { parseAddress } = await import('../utils/addressParser')
+
+                // 尝试从完整地址中解析省市区
+                const fullAddress = [
+                  data.shipping_address.province || '',
+                  data.shipping_address.city || '',
+                  data.shipping_address.district || '',
+                  data.shipping_address.address || '',
+                ].join('')
+
+                const parsed = parseAddress(fullAddress)
+
+                // 补全和验证地址字段
+                if (!data.shipping_address.province && parsed.province) {
+                  data.shipping_address.province = parsed.province
+                }
+
+                if (!data.shipping_address.city && parsed.city) {
+                  data.shipping_address.city = parsed.city
+                }
+
+                // 重点：如果 district 为空或者与 city 重复，尝试从解析结果补全
+                if (
+                  (!data.shipping_address.district ||
+                   data.shipping_address.district === data.shipping_address.city) &&
+                  parsed.district
+                ) {
+                  data.shipping_address.district = parsed.district
+                }
+
+                // 最终验证：必须有省市区
+                if (!data.shipping_address.province) {
+                  throw new Error('收货地址缺少省份信息，请检查地址格式')
+                }
+
+                if (!data.shipping_address.city) {
+                  throw new Error('收货地址缺少城市信息，请检查地址格式')
+                }
+
+                if (!data.shipping_address.district) {
+                  throw new Error(
+                    `收货地址缺少区县信息。当前地址：${fullAddress}，请提供完整的省市区信息`
+                  )
+                }
+
+                // 验证联系信息
+                if (!data.shipping_address.contact_name || !data.shipping_address.contact_phone) {
+                  throw new Error('收货地址缺少联系人或联系电话')
+                }
+
+                // 验证详细地址
+                if (!data.shipping_address.address || data.shipping_address.address.trim() === '') {
+                  throw new Error('请提供详细的收货地址（街道、门牌号等）')
+                }
+              }
+
               // 计算运费
               if (shippingTemplateId && data.shipping_address) {
                 // 查询运费模板详情
