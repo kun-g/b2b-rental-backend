@@ -1,4 +1,4 @@
-import type { CollectionConfig, AccessArgs } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 import { accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
 /**
@@ -30,14 +30,14 @@ export const Users: CollectionConfig = {
   },
   access: {
     // 创建业务身份权限
-    create: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    create: async ({ req: { user, payload } }) => {
       if (!user) return false
       // 检查是否有 platform_admin 角色
       return await accountHasRole(payload, user.id, ['platform_admin'])
-    }) as any,
+    },
 
     // 读取业务身份权限
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // Platform admin 可以查看所有 Users
@@ -52,7 +52,7 @@ export const Users: CollectionConfig = {
           merchant: {
             equals: merchantId,
           },
-        }
+        } as Where
       }
 
       // 其他人只能查看与自己 Account 关联的 Users
@@ -60,11 +60,11 @@ export const Users: CollectionConfig = {
         account: {
           equals: user.id,
         },
-      }
-    }) as any,
+      } as Where
+    },
 
     // 更新业务身份权限
-    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // Platform admin 可以更新所有 Users
@@ -79,7 +79,7 @@ export const Users: CollectionConfig = {
           merchant: {
             equals: merchantId,
           },
-        }
+        } as Where
       }
 
       // 其他人只能更新与自己 Account 关联的 Users
@@ -87,15 +87,15 @@ export const Users: CollectionConfig = {
         account: {
           equals: user.id,
         },
-      }
-    }) as any,
+      } as Where
+    },
 
     // 删除业务身份权限
-    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
       // 只有 platform_admin 可以删除业务身份
       return await accountHasRole(payload, user.id, ['platform_admin'])
-    }) as any,
+    },
   },
   fields: [
     {

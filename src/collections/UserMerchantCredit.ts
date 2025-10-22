@@ -1,4 +1,4 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
 /**
@@ -14,7 +14,7 @@ export const UserMerchantCredit: CollectionConfig = {
     group: '授信管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以查看所有授信
@@ -29,7 +29,7 @@ export const UserMerchantCredit: CollectionConfig = {
           merchant: {
             equals: merchantId,
           },
-        }
+        } as Where
       }
 
       // 用户角色只能看到自己的授信
@@ -39,18 +39,18 @@ export const UserMerchantCredit: CollectionConfig = {
           user: {
             equals: customerUser.id,
           },
-        }
+        } as Where
       }
 
       return false
-    }) as any,
-    create: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    create: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有商户管理员可以创建授信
       return await accountHasRole(payload, user.id, ['merchant_admin'])
-    }) as any,
-    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台管理员可以更新所有授信
@@ -69,8 +69,8 @@ export const UserMerchantCredit: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台管理员可以删除所有授信
@@ -89,7 +89,7 @@ export const UserMerchantCredit: CollectionConfig = {
       }
 
       return false
-    }) as any,
+    },
   },
   fields: [
     {

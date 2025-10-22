@@ -1,4 +1,5 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
+import { accountHasRole } from '../utils/accountUtils'
 
 /**
  * Payments Collection - 支付记录（统一管理所有支付类型）
@@ -18,22 +19,25 @@ export const Payments: CollectionConfig = {
     group: '订单管理',
   },
   access: {
-    create: ({ req: { user } }) => {
+    create: async ({ req: { user, payload } }) => {
+      if (!user) return false
       // 只有平台和商户可以创建支付记录
-      return ['platform_admin', 'platform_operator', 'merchant_admin', 'merchant_member'].includes(
-        user?.role || '',
-      )
+      return await accountHasRole(payload, user.id, [
+        'platform_admin',
+        'platform_operator',
+        'merchant_admin',
+        'merchant_member',
+      ])
     },
-    update: (({ req: { user } }: AccessArgs<any>) => {
+    update: async ({ req: { user, payload } }) => {
+      if (!user) return false
       // 只有平台可以修改支付记录
-      if (user?.role === 'platform_admin' || user?.role === 'platform_operator') {
-        return true
-      }
-      return false
-    }) as any,
-    delete: ({ req: { user } }) => {
+      return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+    },
+    delete: async ({ req: { user, payload } }) => {
+      if (!user) return false
       // 只有平台管理员可以删除支付记录
-      return user?.role === 'platform_admin'
+      return await accountHasRole(payload, user.id, ['platform_admin'])
     },
   },
   fields: [
@@ -184,15 +188,16 @@ export const Payments: CollectionConfig = {
         // 创建支付记录时生成交易流水号和创建时间
         if (operation === 'create') {
           if (!data.transaction_no) {
-            const typePrefix = {
+            const typePrefix: Record<string, string> = {
               rent: 'RENT',
               rent_canceled: 'CANC',
               overdue: 'OVER',
               addr_up: 'ADDU',
               addr_down: 'ADDD',
-            }[data.type || 'rent']
+            }
+            const prefix = typePrefix[data.type || 'rent'] || 'RENT'
 
-            data.transaction_no = `${typePrefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+            data.transaction_no = `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
           }
           data.pay_creat_at = new Date().toISOString()
         }

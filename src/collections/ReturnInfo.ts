@@ -1,4 +1,4 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 
 /**
@@ -14,7 +14,7 @@ export const ReturnInfo: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以查看所有归还信息
@@ -38,14 +38,14 @@ export const ReturnInfo: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    create: (async ({ req: { user, payload } }) => {
+    },
+    create: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有商户管理员可以创建归还信息
       return await accountHasRole(payload, user.id, ['merchant_admin'])
-    }) as any,
-    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台管理员可以更新所有归还信息
@@ -64,8 +64,8 @@ export const ReturnInfo: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台管理员可以删除所有归还信息
@@ -84,7 +84,7 @@ export const ReturnInfo: CollectionConfig = {
       }
 
       return false
-    }) as any,
+    },
   },
   fields: [
     {

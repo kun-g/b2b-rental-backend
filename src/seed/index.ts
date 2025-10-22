@@ -604,7 +604,7 @@ async function seed() {
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${alice.username} × ${merchantA.name}: 10000元 (已用5000)`)
+    console.log(`   ✓ ${aliceAccount.username} × ${merchantA.name}: 10000元 (已用5000)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -617,7 +617,7 @@ async function seed() {
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${bob.username} × ${merchantA.name}: 8000元`)
+    console.log(`   ✓ ${bobAccount.username} × ${merchantA.name}: 8000元`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -630,7 +630,7 @@ async function seed() {
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${bob.username} × ${merchantB.name}: 6000元 (已用1500)`)
+    console.log(`   ✓ ${bobAccount.username} × ${merchantB.name}: 6000元 (已用1500)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -643,7 +643,7 @@ async function seed() {
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${charlie.username} × ${merchantB.name}: 5000元 (已冻结)`)
+    console.log(`   ✓ ${charlieAccount.username} × ${merchantB.name}: 5000元 (已冻结)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -656,7 +656,7 @@ async function seed() {
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${eve.username} × ${merchantA.name}: 5000元 (已用4900，额度不足)`)
+    console.log(`   ✓ ${eveAccount.username} × ${merchantA.name}: 5000元 (已用4900，额度不足)`)
 
     await payload.create({
       collection: 'user-merchant-credit',
@@ -669,7 +669,7 @@ async function seed() {
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${frank.username} × ${merchantA.name}: 3000元`)
+    console.log(`   ✓ ${frankAccount.username} × ${merchantA.name}: 3000元`)
 
     // 10. 创建多角色用户（演示一个账号多个身份）
     console.log('\n🎭 创建多角色用户（演示一个账号拥有多个业务身份）...')

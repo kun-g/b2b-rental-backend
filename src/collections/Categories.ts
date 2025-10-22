@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { accountHasRole } from '../utils/accountUtils'
 
 /**
  * Categories Collection - 类目管理（平台维护）
@@ -14,14 +15,17 @@ export const Categories: CollectionConfig = {
   access: {
     // 所有人可读，仅平台运营/管理员可写
     read: () => true,
-    create: ({ req: { user } }) => {
-      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
+    create: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
     },
-    update: ({ req: { user } }) => {
-      return user?.role === 'platform_admin' || user?.role === 'platform_operator'
+    update: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
     },
-    delete: ({ req: { user } }) => {
-      return user?.role === 'platform_admin'
+    delete: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      return await accountHasRole(payload, user.id, ['platform_admin'])
     },
   },
   fields: [

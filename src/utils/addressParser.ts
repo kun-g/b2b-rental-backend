@@ -284,7 +284,6 @@ export function parseAddress(address: string): ParsedAddress {
   let province: string | undefined;
   let city: string | undefined;
   let district: string | undefined;
-  let street: string | undefined;
   let provinceCode: string | undefined;
   let cityCode: string | undefined;
 
@@ -317,7 +316,7 @@ export function parseAddress(address: string): ParsedAddress {
   }
 
   // 步骤4: 剩余部分作为街道地址
-  street = remaining === '' ? '' : remaining || undefined;
+  const street = remaining === '' ? '' : remaining || undefined;
 
   return {
     province,

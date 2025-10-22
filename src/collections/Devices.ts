@@ -1,4 +1,4 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { accountHasRole } from '../utils/accountUtils'
 
 /**
@@ -13,7 +13,7 @@ export const Devices: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以查看所有设备
@@ -27,14 +27,14 @@ export const Devices: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    create: (async ({ req: { user, payload } }) => {
+    },
+    create: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 商户角色可以创建设备
       return await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])
-    }) as any,
-    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台管理员可以更新所有设备
@@ -48,8 +48,8 @@ export const Devices: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台管理员可以删除所有设备
@@ -63,7 +63,7 @@ export const Devices: CollectionConfig = {
       }
 
       return false
-    }) as any,
+    },
   },
   fields: [
     {

@@ -14,20 +14,20 @@ export const AuditLogs: CollectionConfig = {
     group: '系统管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 仅平台可查看审计日志
       return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
-    }) as any,
+    },
     create: () => true, // 系统自动创建
     update: () => false, // 审计日志不可修改
-    delete: (async ({ req: { user, payload } }) => {
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有平台管理员可以删除审计日志
       return await accountHasRole(payload, user.id, ['platform_admin'])
-    }) as any,
+    },
   },
   fields: [
     {

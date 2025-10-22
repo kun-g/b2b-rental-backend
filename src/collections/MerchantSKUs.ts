@@ -1,8 +1,9 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 import {
   accountHasRole,
   getAccountMerchantId,
   getUserCreditedMerchantIds,
+  getUserFromAccount,
   canViewPlatformOnlyField,
 } from '../utils/accountUtils'
 
@@ -18,7 +19,7 @@ export const MerchantSKUs: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以查看所有 SKU
@@ -58,18 +59,18 @@ export const MerchantSKUs: CollectionConfig = {
               },
             },
           ],
-        }
+        } as Where
       }
 
       return false
-    }) as any,
-    create: (async ({ req: { user, payload } }) => {
+    },
+    create: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有商户管理员和成员可以创建 SKU
       return await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])
-    }) as any,
-    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以更新所有 SKU
@@ -88,8 +89,8 @@ export const MerchantSKUs: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台管理员可以删除所有 SKU
@@ -108,7 +109,7 @@ export const MerchantSKUs: CollectionConfig = {
       }
 
       return false
-    }) as any,
+    },
   },
   fields: [
     {

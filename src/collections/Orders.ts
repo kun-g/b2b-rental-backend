@@ -1,4 +1,4 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 import { APIError } from 'payload'
 import { calculateShippingFee } from '../utils/calculateShipping'
 import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
@@ -16,7 +16,7 @@ export const Orders: CollectionConfig = {
     group: '订单管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以查看所有订单
@@ -31,7 +31,7 @@ export const Orders: CollectionConfig = {
           merchant: {
             equals: merchantId,
           },
-        }
+        } as Where
       }
 
       // 用户角色只能查看自己的订单
@@ -41,18 +41,18 @@ export const Orders: CollectionConfig = {
           customer: {
             equals: customerUser.id,
           },
-        }
+        } as Where
       }
 
       return false
-    }) as any,
-    create: (async ({ req: { user, payload } }) => {
+    },
+    create: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有 customer 角色可以创建订单
       return await accountHasRole(payload, user.id, ['customer'])
-    }) as any,
-    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以更新所有订单
@@ -67,7 +67,7 @@ export const Orders: CollectionConfig = {
           merchant: {
             equals: merchantId,
           },
-        }
+        } as Where
       }
 
       // 用户角色只能更新自己的订单
@@ -77,17 +77,17 @@ export const Orders: CollectionConfig = {
           customer: {
             equals: customerUser.id,
           },
-        }
+        } as Where
       }
 
       return false
-    }) as any,
-    delete: (async ({ req: { user, payload } }) => {
+    },
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有平台管理员可以删除订单
       return await accountHasRole(payload, user.id, ['platform_admin'])
-    }) as any,
+    },
   },
   fields: [
     {

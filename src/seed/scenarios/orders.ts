@@ -34,9 +34,9 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3天后
       rent_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10天后
       daily_fee_snapshot: 50,
-      shipping_fee: 5,
+      shipping_fee_snapshot: 5,
       credit_hold_amount: 5000,
-      total_amount: 355, // 50*7 + 5
+      order_total_amount: 355, // 50*7 + 5
       shipping_address: {
         province: '广东省',
         city: '深圳市',
@@ -62,9 +62,9 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee: 10,
+      shipping_fee_snapshot: 10,
       credit_hold_amount: 5000,
-      total_amount: 360, // 50*7 + 10
+      order_total_amount: 360, // 50*7 + 10
       shipping_address: {
         province: '上海市',
         city: '上海市',
@@ -109,9 +109,9 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee: 15, // 改址后的运费
+      shipping_fee_snapshot: 15, // 改址后的运费
       credit_hold_amount: 1500,
-      total_amount: 185, // 25*7 + 15 (原始) + 5 (改址补差)
+      order_total_amount: 185, // 25*7 + 15 (原始) + 5 (改址补差)
       shipping_address: {
         province: '广东省',
         city: '广州市',
@@ -172,9 +172,9 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee: 12, // 最终运费
+      shipping_fee_snapshot: 12, // 最终运费
       credit_hold_amount: 5000,
-      total_amount: 362, // 50*7 + 12
+      order_total_amount: 362, // 50*7 + 12
       shipping_address: {
         province: '北京市',
         city: '北京市',
@@ -220,9 +220,9 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 发货次日开始计费
       daily_fee_snapshot: 50,
-      shipping_fee: 10,
+      shipping_fee_snapshot: 10,
       credit_hold_amount: 5000,
-      total_amount: 360,
+      order_total_amount: 360,
       shipping_address: {
         province: '上海市',
         city: '上海市',
@@ -292,9 +292,9 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10天后
       actual_start_date: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee: 20,
+      shipping_fee_snapshot: 20,
       credit_hold_amount: 1500,
-      total_amount: 770, // 25*30 + 20
+      order_total_amount: 770, // 25*30 + 20
       shipping_address: {
         province: '上海市',
         city: '上海市',
@@ -356,9 +356,9 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee: 5,
+      shipping_fee_snapshot: 5,
       credit_hold_amount: 5000,
-      total_amount: 705, // 50*14 + 5
+      order_total_amount: 705, // 50*14 + 5
       shipping_address: {
         province: '广东省',
         city: '深圳市',
@@ -435,9 +435,9 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() - 34 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee: 20,
+      shipping_fee_snapshot: 20,
       credit_hold_amount: 1500,
-      total_amount: 195, // 25*7 + 20
+      order_total_amount: 195, // 25*7 + 20
       shipping_address: {
         province: '上海市',
         city: '上海市',
@@ -515,9 +515,9 @@ export async function createOrderScenarios(
       rent_end_date: new Date(Date.now() - 53 * 24 * 60 * 60 * 1000).toISOString(),
       actual_start_date: new Date(Date.now() - 59 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 50,
-      shipping_fee: 5,
+      shipping_fee_snapshot: 5,
       credit_hold_amount: 0, // 已释放
-      total_amount: 455, // 50*7 + 5 + 100(逾期)
+      order_total_amount: 455, // 50*7 + 5 + 100(逾期)
       shipping_address: {
         province: '广东省',
         city: '深圳市',
@@ -632,9 +632,9 @@ export async function createOrderScenarios(
       rent_start_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
       rent_end_date: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000).toISOString(),
       daily_fee_snapshot: 25,
-      shipping_fee: 20,
+      shipping_fee_snapshot: 20,
       credit_hold_amount: 0, // 已释放
-      total_amount: 0, // 已退款
+      order_total_amount: 0, // 已退款
       shipping_address: {
         province: '上海市',
         city: '上海市',

@@ -1,4 +1,4 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
 import {
   accountHasRole,
   getAccountMerchantId,
@@ -17,7 +17,7 @@ export const ShippingTemplates: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以查看所有模板
@@ -47,36 +47,49 @@ export const ShippingTemplates: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    create: ({ req: { user } }) => {
-      return user?.role === 'merchant_admin' || user?.role === 'merchant_member'
     },
-    update: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin') {
+    create: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      return await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])
+    },
+    update: async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 平台管理员可以更新所有运费模板
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
-      if (user?.role === 'merchant_admin' || user?.role === 'merchant_member') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户角色只能更新自己商户的模板
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin', 'merchant_member'])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
           },
         }
       }
+
       return false
     },
-    delete: ({ req: { user } }) => {
-      if (user?.role === 'platform_admin') {
+    delete: async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // 平台管理员可以删除所有运费模板
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
         return true
       }
-      if (user?.role === 'merchant_admin') {
-        const merchantId = typeof user.merchant === 'object' ? user.merchant?.id : user.merchant
+
+      // 商户管理员只能删除自己商户的模板
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
+      if (merchantId) {
         return {
           merchant: {
             equals: merchantId,
           },
         }
       }
+
       return false
     },
   },

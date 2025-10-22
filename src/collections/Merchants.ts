@@ -1,4 +1,4 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
 import {
   accountHasRole,
   getAccountMerchantId,
@@ -19,7 +19,7 @@ export const Merchants: CollectionConfig = {
     group: '商户管理',
   },
   access: {
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 平台角色可以查看所有商户
@@ -49,25 +49,25 @@ export const Merchants: CollectionConfig = {
       }
 
       return false
-    }) as any,
-    create: (async ({ req: { user, payload } }) => {
+    },
+    create: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有平台管理员和运营可以创建商户
       return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
-    }) as any,
-    update: (async ({ req: { user, payload } }) => {
+    },
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有平台管理员和运营可以更新商户
       return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
-    }) as any,
-    delete: (async ({ req: { user, payload } }) => {
+    },
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有平台管理员可以删除商户
       return await accountHasRole(payload, user.id, ['platform_admin'])
-    }) as any,
+    },
   },
   fields: [
     {

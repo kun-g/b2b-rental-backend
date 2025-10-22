@@ -1,4 +1,4 @@
-import type { AccessArgs, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { accountHasRole } from '../utils/accountUtils'
 
 /**
@@ -24,14 +24,14 @@ export const Accounts: CollectionConfig = {
   },
   access: {
     // 账号管理权限 - platform_admin 可以管理所有账号，其他人只能管理自己的账号
-    create: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    create: async ({ req: { user, payload } }) => {
       // 允许注册（无需登录）
       if (!user) return true
 
       // platform_admin 可以创建账号
       return await accountHasRole(payload, user.id, ['platform_admin'])
-    }) as any,
-    read: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 检查是否是 platform_admin
@@ -45,8 +45,8 @@ export const Accounts: CollectionConfig = {
           equals: user.id,
         },
       }
-    }) as any,
-    update: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 检查是否是 platform_admin
@@ -60,13 +60,13 @@ export const Accounts: CollectionConfig = {
           equals: user.id,
         },
       }
-    }) as any,
-    delete: (async ({ req: { user, payload } }: AccessArgs<any>) => {
+    },
+    delete: async ({ req: { user, payload } }) => {
       if (!user) return false
 
       // 只有 platform_admin 可以删除账号（实际上应该用软删除）
       return await accountHasRole(payload, user.id, ['platform_admin'])
-    }) as any,
+    },
   },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天
