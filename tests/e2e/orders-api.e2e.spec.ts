@@ -170,15 +170,55 @@ test.describe('Orders API - 订单创建与授信', () => {
 
     const credit = await creditRes.json()
     const availableCredit = credit.available_credit || 0
+    console.log('当前可用授信额度:', availableCredit)
 
-    // 2. 如果可用额度充足，先手动耗尽（需要平台管理员权限，这里跳过测试）
-    if (availableCredit > 1000) {
-      console.log('可用额度充足，跳过此测试')
-      test.skip()
-      return
+    // 2. 如果可用额度充足，先通过创建订单耗尽额度
+    let exhaustOrderIds: string[] = []
+    let remainingCredit = availableCredit
+
+    // 假设每个订单需要约 5000 元授信（device_value）
+    // 创建足够多的订单直到额度不足
+    while (remainingCredit >= 5000) {
+      const exhaustOrderRes = await request.post(`${baseURL}/api/orders`, {
+        headers: {
+          Authorization: `JWT ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        data: {
+          merchant_sku: skuId,
+          rent_start_date: '2025-10-25',
+          rent_end_date: '2025-11-01',
+          shipping_address: {
+            contact_name: 'E2E测试用户',
+            contact_phone: '13800138000',
+            province: '广东省',
+            city: '深圳市',
+            district: '南山区',
+            address: `科技园南路${exhaustOrderIds.length + 1}号`,
+          },
+        },
+      })
+
+      if (exhaustOrderRes.ok()) {
+        const exhaustOrder = await exhaustOrderRes.json()
+        exhaustOrderIds.push(exhaustOrder.doc.id)
+        remainingCredit -= exhaustOrder.doc.credit_hold_amount || 5000
+        console.log(`创建耗尽订单 ${exhaustOrderIds.length}，剩余额度:`, remainingCredit)
+      } else {
+        // 如果创建失败，可能是其他原因，停止循环
+        break
+      }
+
+      // 安全限制：最多创建 5 个订单
+      if (exhaustOrderIds.length >= 5) {
+        console.log('已创建 5 个订单，停止耗尽额度')
+        break
+      }
     }
 
-    // 3. 尝试创建订单
+    console.log(`共创建 ${exhaustOrderIds.length} 个订单耗尽额度`)
+
+    // 3. 尝试创建订单（此时应该失败）
     const createOrderRes = await request.post(`${baseURL}/api/orders`, {
       headers: {
         Authorization: `JWT ${authToken}`,
@@ -206,6 +246,29 @@ test.describe('Orders API - 订单创建与授信', () => {
     const errorData = await createOrderRes.json()
     console.log('授信不足错误:', errorData)
     expect(errorData.errors).toBeTruthy()
+
+    // 验证错误消息包含"授信额度不足"
+    const errorMessage = errorData.message || errorData.errors?.[0]?.message || ''
+    expect(errorMessage).toContain('授信额度不足')
+
+    // 5. 清理：取消创建的订单以释放授信
+    console.log(`开始清理 ${exhaustOrderIds.length} 个耗尽额度的订单`)
+    for (const orderId of exhaustOrderIds) {
+      try {
+        await request.patch(`${baseURL}/api/orders/${orderId}`, {
+          headers: {
+            Authorization: `JWT ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          data: {
+            status: 'CANCELED',
+          },
+        })
+        console.log(`已取消订单 ${orderId}`)
+      } catch (error) {
+        console.error(`取消订单 ${orderId} 失败:`, error)
+      }
+    }
   })
 
   test('应该能够查询自己的订单列表', async ({ request }) => {

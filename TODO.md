@@ -27,10 +27,6 @@
 - [x] ~~添加 `pay_creat_at`~~ - 已完成，支付订单创建时间（Payments.ts:140-150）
 - [x] 重构为统一支付模型（整合 Surcharges 功能）（已完成）
 
-**Logistics Collection 字段补充**
-- [x] ~~添加 `logistics_type`~~ - 已完成（shipping / return，Logistics.ts:72-83）
-- [x] ~~评估是否拆分发货/归还为两条记录~~ - 已决策：拆分为两条记录，通过 logistics_type 区分
-
 **设计文档同步**
 - [x] ~~更新 `docs/B2B_Collections_WithDesc.md`~~ - 已完成字段对齐和拼写修正
   - [x] Statements 已实现（src/collections/Statements.ts）
@@ -43,10 +39,10 @@
   - [x] ~~ReturnInfo 状态值统一~~ - inactive → disabled
 
 #### 2. 业务逻辑补充
-- [ ] **授信管理**（优先级高，影响下单流程）
-  - [ ] 订单创建时冻结授信额度（已记录 credit_hold_amount，需实际扣减 UserMerchantCredit.used_credit）
-  - [ ] 订单完成/取消时释放授信额度（有 Hook 占位，需实现逻辑）
-  - [ ] 授信额度不足时阻止下单（需在订单创建前验证）
+- [x] **授信管理**（优先级高，影响下单流程） ✅ 已完成 (2025-10-22)
+  - [x] 订单创建时冻结授信额度（已实现，单元测试通过）
+  - [x] 订单完成/取消时释放授信额度（已实现，集成测试通过）
+  - [x] 授信额度不足时阻止下单（已实现，E2E 测试通过）
 - [ ] **订单状态机**
   - [ ] 完善状态流转验证（如 SHIPPED 不能回退到 TO_SHIP）
   - [x] ~~实现 PAID → TO_SHIP 自动流转~~（已完成）
@@ -163,79 +159,3 @@
 - [ ] 部署文档
 - [ ] 运维手册
 - [ ] Collections 设计文档同步（详见 P0-1 设计文档同步任务）
-
----
-
-## 开发规范
-
-### Git Commit 规范
-```
-feat: 新功能
-fix: 修复bug
-docs: 文档更新
-refactor: 重构
-test: 测试
-chore: 构建/工具链
-```
-
-### 分支策略
-- `main` - 生产环境
-- `develop` - 开发环境
-- `feature/*` - 功能分支
-- `hotfix/*` - 紧急修复
-
-### Code Review
-- 所有 PR 需要至少 1 人 Review
-- 关键功能需要 2 人 Review
-
----
-
-## 部署清单
-
-### 环境变量
-```env
-# 数据库
-DATABASE_URI=postgresql://...
-
-# Payload
-PAYLOAD_SECRET=your-secret-key
-PAYLOAD_PUBLIC_SERVER_URL=https://your-domain.com
-
-# 支付（可选）
-WECHAT_PAY_APP_ID=
-WECHAT_PAY_MERCHANT_ID=
-ALIPAY_APP_ID=
-
-# 物流（可选）
-SF_EXPRESS_APP_ID=
-SF_EXPRESS_APP_SECRET=
-
-# 通知（可选）
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USER=
-SMTP_PASS=
-
-SMS_ACCESS_KEY_ID=
-SMS_ACCESS_KEY_SECRET=
-```
-
-### 数据库迁移
-```bash
-# 运行迁移
-pnpm run db:migrate
-
-# Seed 初始数据
-pnpm run db:seed
-```
-
-### 构建部署
-```bash
-# 构建
-pnpm build
-
-# 启动
-pnpm start
-```
-
----
