@@ -58,6 +58,7 @@ function checkOrigin(origin: string | null): boolean {
     'http://localhost:3001',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
+    'https://bfront.flashflock.com',
     process.env.PAYLOAD_PUBLIC_SERVER_URL || '',
     ...(process.env.CORS_ALLOWED_ORIGINS
       ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((o) => o.trim())
