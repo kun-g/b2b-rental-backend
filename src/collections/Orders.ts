@@ -276,6 +276,14 @@ export const Orders: CollectionConfig = {
       },
     },
     {
+      name: 'shipping_fee_adjustment',
+      type: 'number',
+      label: '运费补差价（元）',
+      admin: {
+        description: '商户在发货后添加的运费补差价',
+      },
+    },
+    {
       name: 'credit_hold_amount',
       type: 'number',
       label: '授信冻结金额（元）',
