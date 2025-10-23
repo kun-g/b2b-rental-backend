@@ -21,6 +21,7 @@ export enum BusinessErrorCode {
   CREDIT_INSUFFICIENT = 'CREDIT_INSUFFICIENT',
   CREDIT_INVALID_USER_ROLE = 'CREDIT_INVALID_USER_ROLE',
   CREDIT_ALREADY_EXISTS = 'CREDIT_ALREADY_EXISTS',
+  CREDIT_INCREMENTED = 'CREDIT_INCREMENTED', // 授信额度已累加（成功状态）
 
   // 订单相关 (4000-4999)
   ORDER_NOT_FOUND = 'ORDER_NOT_FOUND',
@@ -62,15 +63,9 @@ export class BusinessError extends Error {
     userMessage: string,
     details?: unknown,
   ) {
-    // message 设置为 JSON 字符串，包含 code 和 message
-    // Payload 会将这个 message 字段返回给前端
-    const errorResponse = {
-      code,
-      message: userMessage,
-    }
-
-    // super(JSON.stringify(errorResponse))
-    super(userMessage)
+    // message 设置为包含 code 的消息
+    // 使用特殊格式使前端能够解析 code
+    super(`[${code}] ${userMessage}`)
 
     this.name = 'BusinessError'
     this.code = code
@@ -99,6 +94,8 @@ export const ErrorMessages = {
   CREDIT_NOT_FOUND: '授信记录不存在',
   CREDIT_INSUFFICIENT: '授信额度不足',
   CREDIT_ALREADY_EXISTS: '该用户已存在授信记录',
+  CREDIT_INCREMENTED: (oldLimit: number, newLimit: number, addAmount: number) =>
+    `授信额度已累加：从 ${oldLimit}元 增加到 ${newLimit}元（新增 ${addAmount}元）`,
 
   // 订单相关
   ORDER_NOT_FOUND: '订单不存在',
@@ -154,6 +151,13 @@ export const createError = {
 
   creditAlreadyExists: (details?: unknown) =>
     new BusinessError(BusinessErrorCode.CREDIT_ALREADY_EXISTS, ErrorMessages.CREDIT_ALREADY_EXISTS, details),
+
+  creditIncremented: (oldLimit: number, newLimit: number, addAmount: number, details?: unknown) =>
+    new BusinessError(
+      BusinessErrorCode.CREDIT_INCREMENTED,
+      ErrorMessages.CREDIT_INCREMENTED(oldLimit, newLimit, addAmount),
+      details
+    ),
 
   // 订单相关
   orderNotFound: (details?: unknown) =>
