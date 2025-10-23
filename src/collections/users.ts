@@ -46,13 +46,39 @@ export const Users: CollectionConfig = {
         return true
       }
 
-      // 商户 admin 可以查看本商户的所有 Users
+      // 商户 admin 可以查看：
+      // 1. 本商户的所有 Users
+      // 2. 有授信关系的 customer Users
       const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
       if (merchantId) {
-        return {
-          merchant: {
-            equals: merchantId,
+        // 查询所有有授信关系的客户 ID
+        const creditRecords = await payload.find({
+          collection: 'user-merchant-credit',
+          where: {
+            merchant: {
+              equals: merchantId,
+            },
           },
+          limit: 10000,
+        })
+
+        const authorizedCustomerIds = creditRecords.docs.map((record: any) =>
+          typeof record.user === 'object' ? record.user.id : record.user
+        )
+
+        return {
+          or: [
+            {
+              merchant: {
+                equals: merchantId,
+              },
+            },
+            {
+              id: {
+                in: authorizedCustomerIds,
+              },
+            },
+          ],
         } as Where
       }
 
