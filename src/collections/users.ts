@@ -1,5 +1,6 @@
 import type { CollectionConfig, Where } from 'payload'
 import { accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
+import { createError } from '../utils/errors'
 
 /**
  * Users Collection - 业务账号（业务身份）
@@ -224,7 +225,10 @@ export const Users: CollectionConfig = {
           })
 
           if (existing.totalDocs > 0) {
-            throw new Error(`该账号已经有 ${data.role} 角色的业务身份，不能重复创建`)
+            throw createError.userRoleDuplicate(data.role, {
+              accountId: data.account,
+              role: data.role,
+            })
           }
         }
 

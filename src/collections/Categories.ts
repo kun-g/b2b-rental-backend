@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { accountHasRole } from '../utils/accountUtils'
+import { createError } from '../utils/errors'
 
 /**
  * Categories Collection - 类目管理（平台维护）
@@ -93,7 +94,7 @@ export const Categories: CollectionConfig = {
 
           // 检查是否选择了自己
           if (data.parent === currentId) {
-            throw new Error('不能选择自己作为父类目')
+            throw createError.categoryInvalidParent({ categoryId: currentId })
           }
 
           // 检查是否选择了自己的子孙节点（防止循环引用）
@@ -129,7 +130,10 @@ export const Categories: CollectionConfig = {
             : String(data.parent)
           const hasCircular = await checkCircular(parentId)
           if (hasCircular) {
-            throw new Error('不能选择自己的子孙节点作为父类目，这会造成循环引用')
+            throw createError.categoryCircularReference({
+              categoryId: currentId,
+              attemptedParentId: parentId,
+            })
           }
         }
 

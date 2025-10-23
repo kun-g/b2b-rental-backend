@@ -1,5 +1,6 @@
 import type { CollectionConfig, Where } from 'payload'
 import { getUserFromAccount, accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
+import { createError } from '../utils/errors'
 
 /**
  * UserMerchantCredit Collection - 授信管理
@@ -267,6 +268,27 @@ export const UserMerchantCredit: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeValidate: [
+      async ({ data, req, operation }) => {
+        // 创建授信时验证 user 必须是 customer 角色
+        if (operation === 'create' && data?.user) {
+          const targetUser = await req.payload.findByID({
+            collection: 'users',
+            id: data.user,
+          })
+
+          if (!targetUser) {
+            throw createError.userNotFound({ userId: data.user })
+          }
+
+          if (targetUser.role !== 'customer') {
+            throw createError.creditInvalidUserRole(targetUser.role)
+          }
+        }
+
+        return data
+      },
+    ],
     beforeChange: [
       async ({ data, req, operation, originalDoc }) => {
         // 获取当前操作者的 User（业务身份）
