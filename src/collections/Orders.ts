@@ -350,42 +350,125 @@ export const Orders: CollectionConfig = {
       ],
     },
     {
+      name: 'return_address_display',
+      type: 'ui',
+      label: '归还地址（便于复制）',
+      admin: {
+        components: {
+          Field: '@/components/ReturnAddressDisplay',
+        },
+        condition: (data) => {
+          // 只在有归还地址时显示
+          return data.return_address && data.return_address.contact_name
+        },
+      },
+    },
+    {
       name: 'return_address',
       type: 'group',
-      label: '归还地址',
+      label: '归还地址（编辑）',
       admin: {
-        description: '用户归还设备的地址（自动从商户归还信息中获取）',
+        description: '商户可在"归还中"之前修改归还地址',
       },
       fields: [
         {
           name: 'contact_name',
           type: 'text',
           label: '归还联系人',
+          admin: {
+            description: '订单状态为 RETURNING 及之后不可修改',
+          },
+          access: {
+            update: ({ data }) => {
+              // 在 RETURNING 及之后的状态，归还地址不可编辑
+              const readOnlyStatuses = ['RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+              return !readOnlyStatuses.includes(data?.status)
+            },
+          },
         },
         {
           name: 'contact_phone',
           type: 'text',
           label: '联系电话',
+          admin: {
+            description: '订单状态为 RETURNING 及之后不可修改',
+          },
+          access: {
+            update: ({ data }) => {
+              const readOnlyStatuses = ['RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+              return !readOnlyStatuses.includes(data?.status)
+            },
+          },
         },
         {
           name: 'province',
           type: 'text',
           label: '省',
+          admin: {
+            description: '订单状态为 RETURNING 及之后不可修改',
+          },
+          access: {
+            update: ({ data }) => {
+              const readOnlyStatuses = ['RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+              return !readOnlyStatuses.includes(data?.status)
+            },
+          },
         },
         {
           name: 'city',
           type: 'text',
           label: '市',
+          admin: {
+            description: '订单状态为 RETURNING 及之后不可修改',
+          },
+          access: {
+            update: ({ data }) => {
+              const readOnlyStatuses = ['RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+              return !readOnlyStatuses.includes(data?.status)
+            },
+          },
         },
         {
           name: 'district',
           type: 'text',
           label: '区',
+          admin: {
+            description: '订单状态为 RETURNING 及之后不可修改',
+          },
+          access: {
+            update: ({ data }) => {
+              const readOnlyStatuses = ['RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+              return !readOnlyStatuses.includes(data?.status)
+            },
+          },
         },
         {
           name: 'address',
           type: 'text',
           label: '详细地址',
+          admin: {
+            description: '订单状态为 RETURNING 及之后不可修改',
+          },
+          access: {
+            update: ({ data }) => {
+              const readOnlyStatuses = ['RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+              return !readOnlyStatuses.includes(data?.status)
+            },
+          },
+        },
+        {
+          name: 'postal_code',
+          type: 'text',
+          label: '邮政编码',
+          admin: {
+            description: '订单状态为 RETURNING 及之后不可修改',
+          },
+          access: {
+            update: ({ data }) => {
+              const readOnlyStatuses = ['RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+              return !readOnlyStatuses.includes(data?.status)
+            },
+          },
         },
       ],
     },
@@ -772,16 +855,7 @@ export const Orders: CollectionConfig = {
             notes: data.notes,
           })
 
-          // PAID自动流转TO_SHIP
-          if (data.status === 'PAID') {
-            data.status = 'TO_SHIP'
-            data.status_history.push({
-              status: 'TO_SHIP',
-              changed_at: new Date().toISOString(),
-              operator: 'system',
-              notes: '支付成功自动进入待发货',
-            })
-          }
+          // PAID 状态不自动流转，需要商户手动点击"接受订单"
 
           // SHIPPED时设置计费起点和处理设备绑定
           if (data.status === 'SHIPPED') {

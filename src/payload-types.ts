@@ -586,15 +586,37 @@ export interface Order {
     region_code?: string | null;
   };
   /**
-   * 用户归还设备的地址（自动从商户归还信息中获取）
+   * 商户可在"归还中"之前修改归还地址
    */
   return_address?: {
+    /**
+     * 订单状态为 RETURNING 及之后不可修改
+     */
     contact_name?: string | null;
+    /**
+     * 订单状态为 RETURNING 及之后不可修改
+     */
     contact_phone?: string | null;
+    /**
+     * 订单状态为 RETURNING 及之后不可修改
+     */
     province?: string | null;
+    /**
+     * 订单状态为 RETURNING 及之后不可修改
+     */
     city?: string | null;
+    /**
+     * 订单状态为 RETURNING 及之后不可修改
+     */
     district?: string | null;
+    /**
+     * 订单状态为 RETURNING 及之后不可修改
+     */
     address?: string | null;
+    /**
+     * 订单状态为 RETURNING 及之后不可修改
+     */
+    postal_code?: string | null;
   };
   /**
    * 订单的发货物流信息（logistics_type=shipping）
@@ -1314,6 +1336,7 @@ export interface OrdersSelect<T extends boolean = true> {
         city?: T;
         district?: T;
         address?: T;
+        postal_code?: T;
       };
   shipping_logistics?: T;
   return_logistics?: T;
