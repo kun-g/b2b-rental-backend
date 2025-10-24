@@ -246,13 +246,16 @@ export const ShippingTemplates: CollectionConfig = {
       async ({ doc, req, operation }) => {
         // 如果设置为默认模板，取消同商户其他模板的默认状态
         if (doc.is_default && operation === 'update') {
+          // 处理 merchant 可能是对象或 ID 的情况
+          const merchantId = typeof doc.merchant === 'object' ? doc.merchant.id : doc.merchant
+
           await req.payload.update({
             collection: 'shipping-templates',
             where: {
               and: [
                 {
                   merchant: {
-                    equals: doc.merchant,
+                    equals: merchantId,
                   },
                 },
                 {

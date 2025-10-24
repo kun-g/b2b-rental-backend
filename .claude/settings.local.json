@@ -61,7 +61,11 @@
       "Bash(git rm:*)",
       "Bash(podman ps:*)",
       "Bash(pnpm test:e2e orders-api.e2e.spec.ts)",
-      "Bash(pkill -f \"playwright test\")"
+      "Bash(pkill -f \"playwright test\")",
+      "Bash(NODE_ENV=development pnpm exec vitest run tests/int/UserMerchantCredit.spec.ts --no-coverage)",
+      "Bash(NODE_ENV=development pnpm exec vitest run tests/int/CreditIncrementAPI.spec.ts --no-coverage)",
+      "Bash(NODE_ENV=development pnpm exec vitest run tests/int/ --no-coverage)",
+      "Bash(NODE_ENV=development pnpm exec vitest run tests/int/CreateOrIncrementCredit.spec.ts --no-coverage)"
     ],
     "deny": [],
     "ask": []

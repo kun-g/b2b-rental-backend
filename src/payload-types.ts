@@ -519,9 +519,13 @@ export interface Order {
   merchant?: (number | null) | Merchant;
   merchant_sku: number | MerchantSkus;
   /**
-   * 发货时绑定设备SN
+   * 发货时绑定的设备ID（系统会根据设备SN自动查找或创建设备）
    */
   device?: (number | null) | Device;
+  /**
+   * 发货时输入设备SN，系统会自动处理设备绑定
+   */
+  device_sn?: string | null;
   /**
    * 对应PRD状态机流转
    */
@@ -564,6 +568,10 @@ export interface Order {
    * 订单使用的运费模板（自动从 SKU 获取）
    */
   shipping_template_id?: (number | null) | ShippingTemplate;
+  /**
+   * 商户在发货后添加的运费补差价
+   */
+  shipping_fee_adjustment?: number | null;
   /**
    * 按设备价值冻结，完成时释放
    */
@@ -1271,6 +1279,7 @@ export interface OrdersSelect<T extends boolean = true> {
   merchant?: T;
   merchant_sku?: T;
   device?: T;
+  device_sn?: T;
   status?: T;
   shipping_date?: T;
   rent_start_date?: T;
@@ -1283,6 +1292,7 @@ export interface OrdersSelect<T extends boolean = true> {
   device_value_snapshot?: T;
   shipping_fee_snapshot?: T;
   shipping_template_id?: T;
+  shipping_fee_adjustment?: T;
   credit_hold_amount?: T;
   shipping_address?:
     | T

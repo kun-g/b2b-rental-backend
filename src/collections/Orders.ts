@@ -139,7 +139,16 @@ export const Orders: CollectionConfig = {
       relationTo: 'devices',
       label: '绑定设备',
       admin: {
-        description: '发货时绑定设备SN',
+        description: '发货时绑定的设备ID（系统会根据设备SN自动查找或创建设备）',
+      },
+    },
+    {
+      name: 'device_sn',
+      type: 'text',
+      label: '设备序列号',
+      admin: {
+        description: '发货时输入设备SN，系统会自动处理设备绑定',
+        condition: (data) => ['SHIPPED', 'IN_RENT', 'RETURNING', 'RETURNED', 'COMPLETED'].includes(data.status),
       },
     },
     {
@@ -509,6 +518,16 @@ export const Orders: CollectionConfig = {
   hooks: {
     beforeChange: [
       async ({ data, req, operation, originalDoc }) => {
+        // 调试日志：打印接收到的数据
+        if (operation === 'update') {
+          console.log('📦 [Orders beforeChange] 接收到的更新数据:', {
+            status: data.status,
+            shipping_logistics: data.shipping_logistics,
+            return_logistics: data.return_logistics,
+            device_sn: data.device_sn,
+          })
+        }
+
         // 创建订单时生成订单号
         if (operation === 'create') {
           data.order_no = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
@@ -764,12 +783,69 @@ export const Orders: CollectionConfig = {
             })
           }
 
-          // SHIPPED时设置计费起点
-          if (data.status === 'SHIPPED' && !data.actual_start_date) {
-            const now = new Date()
-            const nextDay = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-            nextDay.setHours(0, 0, 0, 0)
-            data.actual_start_date = nextDay.toISOString()
+          // SHIPPED时设置计费起点和处理设备绑定
+          if (data.status === 'SHIPPED') {
+            // 设置计费起点
+            if (!data.actual_start_date) {
+              const now = new Date()
+              const nextDay = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+              nextDay.setHours(0, 0, 0, 0)
+              data.actual_start_date = nextDay.toISOString()
+            }
+
+            // 处理设备绑定：根据 device_sn 查找或创建设备
+            if (data.device_sn) {
+              const skuId = typeof data.merchant_sku === 'object' ? data.merchant_sku.id : data.merchant_sku
+
+              // 查找是否已存在该 SN 的设备
+              const existingDevices = await req.payload.find({
+                collection: 'devices',
+                where: {
+                  sn: {
+                    equals: data.device_sn.trim(),
+                  },
+                },
+                limit: 1,
+              })
+
+              if (existingDevices.docs.length > 0) {
+                // 设备已存在，直接关联
+                const device = existingDevices.docs[0]
+
+                // 检查设备SKU是否匹配
+                const deviceSkuId = typeof device.merchant_sku === 'object' ? device.merchant_sku.id : device.merchant_sku
+                if (String(deviceSkuId) !== String(skuId)) {
+                  throw new APIError(
+                    `设备 ${data.device_sn} 属于其他SKU，无法绑定到此订单`,
+                    400
+                  )
+                }
+
+                // 检查设备状态
+                if (device.status !== 'in_stock' && device.status !== 'in_transit') {
+                  throw new APIError(
+                    `设备 ${data.device_sn} 状态为 ${device.status}，无法发货`,
+                    400
+                  )
+                }
+
+                data.device = device.id
+              } else {
+                // 设备不存在，自动创建
+                const newDevice = await req.payload.create({
+                  collection: 'devices',
+                  data: {
+                    merchant_sku: skuId,
+                    sn: data.device_sn.trim(),
+                    status: 'in_transit',
+                    condition: 'new',
+                    notes: `订单 ${data.order_no} 发货时自动创建`,
+                  },
+                })
+
+                data.device = newDevice.id
+              }
+            }
           }
         }
 
