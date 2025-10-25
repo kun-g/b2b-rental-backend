@@ -239,6 +239,19 @@ export const Orders: CollectionConfig = {
       },
     },
     {
+      name: 'return_confirm_time',
+      type: 'date',
+      label: '归还签收确认时间',
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        description: '商户确认收到归还设备的时间，用于计算实际租期',
+        readOnly: true,
+        condition: (data) => ['RETURNED', 'COMPLETED'].includes(data.status),
+      },
+    },
+    {
       name: 'timezone',
       type: 'text',
       defaultValue: 'Asia/Shanghai',
@@ -918,6 +931,111 @@ export const Orders: CollectionConfig = {
                 })
 
                 data.device = newDevice.id
+              }
+            }
+          }
+
+          // RETURNED时记录签收时间并计算超期
+          if (data.status === 'RETURNED' && originalDoc.status === 'RETURNING') {
+            // 记录归还签收确认时间
+            if (!data.return_confirm_time) {
+              data.return_confirm_time = new Date().toISOString()
+            }
+
+            // 计算实际租期和是否超期
+            if (data.actual_start_date && data.rent_days && data.daily_fee_snapshot) {
+              const actualStartDate = new Date(data.actual_start_date)
+              const returnConfirmTime = new Date(data.return_confirm_time)
+
+              // 计算实际租期（向上取整）
+              const actualDays = Math.ceil(
+                (returnConfirmTime.getTime() - actualStartDate.getTime()) / (1000 * 60 * 60 * 24)
+              )
+
+              console.log('📊 [超期计算]', {
+                actual_start_date: data.actual_start_date,
+                return_confirm_time: data.return_confirm_time,
+                actualDays,
+                rent_days: data.rent_days,
+              })
+
+              // 判断是否超期
+              if (actualDays > data.rent_days) {
+                const overdueDays = actualDays - data.rent_days
+                const overdueAmount = overdueDays * data.daily_fee_snapshot
+
+                // 更新超期信息
+                data.is_overdue = true
+                data.overdue_days = overdueDays
+                data.overdue_amount = overdueAmount
+
+                // 更新订单总额
+                const originalTotal = data.order_total_amount || 0
+                data.order_total_amount = originalTotal + overdueAmount
+
+                console.log('⚠️  [订单超期]', {
+                  overdueDays,
+                  overdueAmount,
+                  originalTotal,
+                  newTotal: data.order_total_amount,
+                })
+              } else {
+                // 未超期
+                data.is_overdue = false
+                data.overdue_days = 0
+                data.overdue_amount = 0
+
+                console.log('✅ [订单未超期]', {
+                  actualDays,
+                  rent_days: data.rent_days,
+                })
+              }
+            }
+          }
+
+          // COMPLETED时检查是否有未支付的补差价
+          if (data.status === 'COMPLETED' && originalDoc.status === 'RETURNED') {
+            // 如果订单有超期费用，检查是否已支付
+            if (data.is_overdue && data.overdue_amount > 0) {
+              // 查询是否存在已支付的逾期补差价记录
+              const overduePayments = await req.payload.find({
+                collection: 'payments',
+                where: {
+                  and: [
+                    {
+                      order: {
+                        equals: originalDoc.id,
+                      },
+                    },
+                    {
+                      type: {
+                        equals: 'overdue',
+                      },
+                    },
+                    {
+                      status: {
+                        equals: 'paid',
+                      },
+                    },
+                  ],
+                },
+              })
+
+              const totalPaid = overduePayments.docs.reduce((sum, payment) => {
+                return sum + (payment.amount || 0)
+              }, 0)
+
+              console.log('💰 [补差价支付检查]', {
+                overdue_amount: data.overdue_amount,
+                totalPaid,
+                hasUnpaid: totalPaid < data.overdue_amount,
+              })
+
+              if (totalPaid < data.overdue_amount) {
+                throw new APIError(
+                  `订单超期 ${data.overdue_days} 天，需要客户支付补差价 ${data.overdue_amount - totalPaid} 元后才能完成订单`,
+                  400
+                )
               }
             }
           }
