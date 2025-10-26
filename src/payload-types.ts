@@ -549,6 +549,10 @@ export interface Order {
    */
   actual_start_date?: string | null;
   /**
+   * 商户确认收到归还设备的时间，用于计算实际租期
+   */
+  return_confirm_time?: string | null;
+  /**
    * 默认北京时间（UTC+8）
    */
   timezone?: string | null;
@@ -1309,6 +1313,7 @@ export interface OrdersSelect<T extends boolean = true> {
   order_creat_at?: T;
   rent_days?: T;
   actual_start_date?: T;
+  return_confirm_time?: T;
   timezone?: T;
   daily_fee_snapshot?: T;
   device_value_snapshot?: T;
