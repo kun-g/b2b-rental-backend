@@ -611,26 +611,26 @@ async function seed() {
       data: {
         user: bob.id,
         merchant: merchantA.id,
-        credit_limit: 8000,
+        credit_limit: 15000,
         used_credit: 0,
         status: 'active',
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${bobAccount.username} × ${merchantA.name}: 8000元`)
+    console.log(`   ✓ ${bobAccount.username} × ${merchantA.name}: 15000元`)
 
     await payload.create({
       collection: 'user-merchant-credit',
       data: {
         user: bob.id,
         merchant: merchantB.id,
-        credit_limit: 6000,
-        used_credit: 1500,
+        credit_limit: 10000,
+        used_credit: 0, // 将由订单创建时自动冻结
         status: 'active',
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${bobAccount.username} × ${merchantB.name}: 6000元 (已用1500)`)
+    console.log(`   ✓ ${bobAccount.username} × ${merchantB.name}: 10000元`)
 
     await payload.create({
       collection: 'user-merchant-credit',
