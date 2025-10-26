@@ -65,7 +65,10 @@
       "Bash(NODE_ENV=development pnpm exec vitest run tests/int/UserMerchantCredit.spec.ts --no-coverage)",
       "Bash(NODE_ENV=development pnpm exec vitest run tests/int/CreditIncrementAPI.spec.ts --no-coverage)",
       "Bash(NODE_ENV=development pnpm exec vitest run tests/int/ --no-coverage)",
-      "Bash(NODE_ENV=development pnpm exec vitest run tests/int/CreateOrIncrementCredit.spec.ts --no-coverage)"
+      "Bash(NODE_ENV=development pnpm exec vitest run tests/int/CreateOrIncrementCredit.spec.ts --no-coverage)",
+      "Bash(pnpm dev)",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill -9)"
     ],
     "deny": [],
     "ask": []
