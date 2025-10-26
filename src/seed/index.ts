@@ -598,13 +598,13 @@ async function seed() {
       data: {
         user: alice.id,
         merchant: merchantA.id,
-        credit_limit: 10000,
-        used_credit: 5000,
+        credit_limit: 20000, // 提高额度以支持多个订单（3个订单 × 5000 = 15000）
+        used_credit: 0, // 将由订单创建时自动冻结
         status: 'active',
         source: 'manual',
       },
     })
-    console.log(`   ✓ ${aliceAccount.username} × ${merchantA.name}: 10000元 (已用5000)`)
+    console.log(`   ✓ ${aliceAccount.username} × ${merchantA.name}: 20000元`)
 
     await payload.create({
       collection: 'user-merchant-credit',
