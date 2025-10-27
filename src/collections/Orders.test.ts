@@ -399,4 +399,104 @@ describe('Orders Collection - 订单创建与授信冻结', () => {
       },
     })
   })
+
+  it('应该自动填充地区编码（region_code）', async () => {
+    const order = await payload.create({
+      collection: 'orders',
+      data: {
+        customer: testUser.id,
+        merchant_sku: testSKU.id,
+        rent_start_date: '2025-11-01',
+        rent_end_date: '2025-11-07',
+        shipping_address: {
+          contact_name: '测试用户',
+          contact_phone: '13800138000',
+          province: '广东省',
+          city: '深圳市',
+          district: '南山区',
+          address: '科技园南路15号',
+        },
+      },
+      user: testAccount,
+    })
+
+    // 验证 region_code 是6位数字编码
+    expect(order.shipping_address.region_code).toMatch(/^\d{6}$/)
+    // 深圳市南山区的编码是 440305
+    expect(order.shipping_address.region_code).toBe('440305')
+
+    // 清理
+    await payload.delete({ collection: 'orders', id: order.id })
+  })
+
+  it('应该拦截禁运区的订单', async () => {
+    // 更新运费模板，添加内蒙古为禁运区
+    await payload.update({
+      collection: 'shipping-templates',
+      id: testShippingTemplate.id,
+      data: {
+        blacklist_regions: [
+          {
+            region_code_path: '150000',
+            region_name: '内蒙古自治区',
+            reason: '测试禁运区',
+          },
+        ],
+      },
+    })
+
+    // 尝试创建内蒙古的订单，应该被拦截
+    await expect(
+      payload.create({
+        collection: 'orders',
+        data: {
+          customer: testUser.id,
+          merchant_sku: testSKU.id,
+          rent_start_date: '2025-11-01',
+          rent_end_date: '2025-11-07',
+          shipping_address: {
+            contact_name: '测试用户',
+            contact_phone: '13800138000',
+            province: '内蒙古自治区',
+            city: '乌海市',
+            district: '海南区',
+            address: '光明小区',
+          },
+        },
+        user: testAccount,
+      })
+    ).rejects.toThrow('该地址不在配送范围内')
+
+    // 恢复运费模板
+    await payload.update({
+      collection: 'shipping-templates',
+      id: testShippingTemplate.id,
+      data: {
+        blacklist_regions: [],
+      },
+    })
+  })
+
+  it('应该在省份无法识别时抛出错误', async () => {
+    await expect(
+      payload.create({
+        collection: 'orders',
+        data: {
+          customer: testUser.id,
+          merchant_sku: testSKU.id,
+          rent_start_date: '2025-11-01',
+          rent_end_date: '2025-11-07',
+          shipping_address: {
+            contact_name: '测试用户',
+            contact_phone: '13800138000',
+            province: '不存在的省份',
+            city: '不存在的城市',
+            district: '不存在的区',
+            address: '测试地址',
+          },
+        },
+        user: testAccount,
+      })
+    ).rejects.toThrow('无法识别省份')
+  })
 })

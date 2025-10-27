@@ -765,6 +765,76 @@ export const Orders: CollectionConfig = {
                 if (!data.shipping_address.address || data.shipping_address.address.trim() === '') {
                   throw new APIError('请提供详细的收货地址（街道、门牌号等）', 400)
                 }
+
+                // 自动填充地区编码（6位数字编码）
+                // 如果 region_code 不是标准的6位数字编码，则根据省市区名称查询编码
+                if (!data.shipping_address.region_code?.match(/^\d{6}$/)) {
+                  try {
+                    // 动态导入 china-division 库
+                    const chinaData = await import('china-division/dist/provinces.json')
+                    const citiesData = await import('china-division/dist/cities.json')
+                    const areasData = await import('china-division/dist/areas.json')
+
+                    // 查询省编码
+                    const provinceItem = chinaData.default.find(
+                      (p: any) => p.name === data.shipping_address.province
+                    )
+                    if (!provinceItem) {
+                      throw new APIError(
+                        `无法识别省份: ${data.shipping_address.province}，请检查地址格式是否正确`,
+                        400,
+                      )
+                    }
+
+                    // 查询市编码
+                    let cityItem = citiesData.default.find(
+                      (c: any) => c.name === data.shipping_address.city && c.provinceCode === provinceItem.code
+                    )
+
+                    // 特殊处理：直辖市（北京、上海、天津、重庆）
+                    // 直辖市的省和市名称相同，但在 cities 数据中没有对应记录
+                    // 这种情况下，直接使用省级编码
+                    const isDirectMunicipality = ['北京市', '上海市', '天津市', '重庆市'].includes(provinceItem.name)
+                    if (!cityItem && !isDirectMunicipality) {
+                      throw new APIError(
+                        `无法识别城市: ${data.shipping_address.city}（${data.shipping_address.province}），请检查地址格式是否正确`,
+                        400,
+                      )
+                    }
+
+                    // 查询区/县编码
+                    let areaItem
+                    if (data.shipping_address.district) {
+                      // 对于直辖市，区编码的 cityCode 应该是省级编码（因为没有市级编码）
+                      const parentCode = isDirectMunicipality ? provinceItem.code : cityItem?.code
+
+                      areaItem = areasData.default.find(
+                        (a: any) => a.name === data.shipping_address.district && a.cityCode === parentCode
+                      )
+                      if (!areaItem) {
+                        // 如果找不到区级编码，降级使用市级或省级编码
+                        console.warn(
+                          `[Orders] 无法识别区县: ${data.shipping_address.district}（${data.shipping_address.city}），将使用${isDirectMunicipality ? '省级' : '市级'}编码`
+                        )
+                      }
+                    }
+
+                    // 优先使用区级编码，其次市级，最后省级
+                    data.shipping_address.region_code = areaItem?.code || cityItem?.code || provinceItem?.code
+
+                    console.log(
+                      `[Orders] 地区编码转换成功: ${data.shipping_address.province} ${data.shipping_address.city} ${data.shipping_address.district} -> ${data.shipping_address.region_code}`
+                    )
+                  } catch (error) {
+                    if (error instanceof APIError) {
+                      throw error
+                    }
+                    throw new APIError(
+                      `地址编码转换失败: ${error.message}，请检查省市区是否完整和正确`,
+                      400,
+                    )
+                  }
+                }
               }
 
               // 计算运费
