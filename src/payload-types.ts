@@ -207,6 +207,7 @@ export interface Account {
  */
 export interface User {
   id: number;
+  username?: string | null;
   /**
    * 关联的登录账号（一个账号可以有多个业务身份）
    */
@@ -1101,6 +1102,7 @@ export interface AccountsSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  username?: T;
   account?: T;
   user_type?: T;
   role?: T;

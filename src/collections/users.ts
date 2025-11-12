@@ -1,6 +1,7 @@
 import type { CollectionConfig, Where } from 'payload'
 import { accountHasRole, getAccountMerchantId } from '../utils/accountUtils'
 import { createError } from '../utils/errors'
+import type { Account, User } from '../payload-types'
 
 /**
  * Users Collection - 业务账号（业务身份）
@@ -130,6 +131,12 @@ export const Users: CollectionConfig = {
     },
   },
   fields: [
+    {
+      name: 'username',
+      type: 'text',
+      admin: { readOnly: true },
+      access: { read: () => true },
+    },
     {
       name: 'account',
       type: 'relationship',
@@ -274,6 +281,25 @@ export const Users: CollectionConfig = {
           }
         }
         return data
+      },
+    ],
+    afterRead: [
+      async ({ doc, req }) => {
+        try {
+          const accountId = typeof doc.account === 'object' ? (doc.account as Account).id : doc.account
+          if (!accountId) return doc
+          const account = (await req.payload.findByID({
+            collection: 'accounts',
+            id: accountId,
+            overrideAccess: true,
+            depth: 0,
+          })) as Account
+          const username = account?.username
+          if (typeof username === 'string') {
+            ;(doc as User & { username?: string }).username = username
+          }
+        } catch {}
+        return doc
       },
     ],
   },

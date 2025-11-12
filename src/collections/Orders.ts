@@ -787,7 +787,7 @@ export const Orders: CollectionConfig = {
                     }
 
                     // 查询市编码
-                    let cityItem = citiesData.default.find(
+                    const cityItem = citiesData.default.find(
                       (c: any) => c.name === data.shipping_address.city && c.provinceCode === provinceItem.code
                     )
 
