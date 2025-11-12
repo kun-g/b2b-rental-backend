@@ -10,6 +10,8 @@ build
 .DS_Store
 coverage
 postgres-data
+dev.sqlite
+*.sqlite
 
 playwright-report
 test-results

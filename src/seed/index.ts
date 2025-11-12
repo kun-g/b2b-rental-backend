@@ -713,6 +713,32 @@ async function seed() {
       `   ✓ ${merchantAdminAAccount.username}: merchant_admin + customer (2个身份，既管理商户又能租设备)`,
     )
 
+    // 10.4 test_all 账号（商户管理员 + 租方）
+    const testAllAccount = await payload.create({
+      collection: 'accounts',
+      data: accountsData.testAll,
+    })
+    const testAllMerchantAdmin = await payload.create({
+      collection: 'users',
+      data: {
+        account: testAllAccount.id,
+        user_type: 'merchant',
+        role: 'merchant_admin',
+        merchant: merchantA.id,
+        status: 'active',
+      },
+    })
+    const testAllCustomerUser = await payload.create({
+      collection: 'users',
+      data: {
+        ...usersData.testAllCustomer,
+        account: testAllAccount.id,
+      },
+    })
+    console.log(
+      `   ✓ ${testAllAccount.username}: merchant_admin + customer (2个身份)`,
+    )
+
     // 11. 创建订单场景
     await createOrderScenarios(payload, {
       users: { alice, bob, charlie },

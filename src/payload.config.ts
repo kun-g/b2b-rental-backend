@@ -34,21 +34,18 @@ const dirname = path.dirname(filename)
  *
  * 注意：生产环境不安装 SQLite 依赖，测试需要在开发环境运行
  */
-function getDatabaseAdapter() {
+async function getDatabaseAdapter() {
   const isTest = process.env.NODE_ENV === 'test'
 
   if (isTest) {
-    // 测试环境：使用 SQLite 内存数据库（速度快，完全隔离）
-    // 如果在生产环境尝试运行测试会失败（因为没有安装 better-sqlite3）
     try {
-      // 动态 require 避免生产构建时加载
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { sqliteAdapter } = require('@payloadcms/db-sqlite')
+      const mod = await import('@payloadcms/db-sqlite')
+      const { sqliteAdapter } = mod as any
       return sqliteAdapter({
         client: {
-          url: ':memory:', // 内存数据库
+          url: ':memory:',
         },
-        push: true, // 自动同步 schema
+        push: true,
       })
     } catch (_error) {
       throw new Error(
@@ -57,12 +54,21 @@ function getDatabaseAdapter() {
     }
   }
 
-  // 开发/生产环境：使用 PostgreSQL
+  if (process.env.DEV_USE_SQLITE === 'true') {
+    const mod = await import('@payloadcms/db-sqlite')
+    const { sqliteAdapter } = mod as any
+    return sqliteAdapter({
+      client: {
+        url: 'file:dev.sqlite',
+      },
+      push: true,
+    })
+  }
+
   return postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
-    // 允许通过 DATABASE_PUSH 环境变量控制是否自动同步
     push: process.env.DATABASE_PUSH === 'true' || process.env.NODE_ENV !== 'production',
   })
 }
@@ -111,7 +117,7 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: getDatabaseAdapter(),
+  db: await getDatabaseAdapter(),
   sharp,
   plugins: [
     payloadCloudPlugin(),

@@ -78,6 +78,11 @@ export const Users: CollectionConfig = {
                 in: authorizedCustomerIds,
               },
             },
+            {
+              account: {
+                equals: user.id,
+              },
+            },
           ],
         } as Where
       }

@@ -31,6 +31,14 @@ export const accountsData = {
     status: 'active' as const,
   },
 
+  testAll: {
+    username: 'test_all',
+    email: 'test_all@demo.local',
+    phone: '13900000999',
+    password: '123',
+    status: 'active' as const,
+  },
+
   // ===== 租方端 =====
   alice: {
     username: 'alice',
@@ -207,5 +215,11 @@ export const usersData = {
         is_default: true,
       },
     ],
+  },
+
+  testAllCustomer: {
+    user_type: 'customer' as const,
+    role: 'customer' as const,
+    status: 'active' as const,
   },
 }
