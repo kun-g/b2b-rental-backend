@@ -981,6 +981,73 @@ export const Orders: CollectionConfig = {
           )
         }
 
+        // 更新订单时，如果修改了地址，重新计算运费
+        if (operation === 'update' && data.shipping_address && originalDoc.shipping_address) {
+          // 检查地址是否发生变化
+          const addressChanged =
+            originalDoc.shipping_address.province !== data.shipping_address.province ||
+            originalDoc.shipping_address.city !== data.shipping_address.city ||
+            originalDoc.shipping_address.district !== data.shipping_address.district
+
+          if (addressChanged) {
+            console.log('📍 [Orders] 检测到地址变化，重新计算运费')
+
+            // 检查订单状态，已发货后不允许修改地址
+            if (['SHIPPED', 'IN_RENT', 'RETURNING', 'RETURNED', 'COMPLETED'].includes(originalDoc.status)) {
+              throw new APIError('订单已发货，无法修改收货地址', 400)
+            }
+
+            // 获取运费模板
+            const shippingTemplateId = originalDoc.shipping_template_id
+
+            if (shippingTemplateId) {
+              const shippingTemplate = await req.payload.findByID({
+                collection: 'shipping-templates',
+                id: shippingTemplateId,
+              })
+
+              if (shippingTemplate) {
+                const shippingResult = calculateShippingFee(shippingTemplate as any, data.shipping_address)
+
+                // 检查是否为黑名单地区
+                if (shippingResult.isBlacklisted) {
+                  throw new APIError(
+                    `该地址不在配送范围内: ${shippingResult.blacklistReason || '该地区不发货'}`,
+                    400,
+                  )
+                }
+
+                const newShippingFee = shippingResult.fee
+                const oldShippingFee = originalDoc.shipping_fee_snapshot
+
+                // 根据订单状态决定如何处理运费变化
+                if (originalDoc.status === 'NEW') {
+                  // 未支付订单：直接更新运费快照和订单总额
+                  data.shipping_fee_snapshot = newShippingFee
+
+                  // 重新计算订单总额
+                  const rentAmount = originalDoc.daily_fee_snapshot * originalDoc.rent_days
+                  data.order_total_amount = rentAmount + newShippingFee
+
+                  console.log(
+                    `✅ [Orders] 未支付订单修改地址，更新运费: ${oldShippingFee} -> ${newShippingFee}，订单总额: ${data.order_total_amount}`,
+                  )
+                } else if (['PAID', 'TO_SHIP'].includes(originalDoc.status)) {
+                  // 已支付订单：计算运费补差价
+                  const adjustment = newShippingFee - oldShippingFee
+
+                  if (adjustment !== 0) {
+                    data.shipping_fee_adjustment = adjustment
+                    console.log(
+                      `✅ [Orders] 已支付订单修改地址，运费补差价: ${adjustment > 0 ? '+' : ''}${adjustment}元`,
+                    )
+                  }
+                }
+              }
+            }
+          }
+        }
+
         // 记录状态流转
         if (operation === 'update' && originalDoc.status !== data.status) {
           if (!data.status_history) {
