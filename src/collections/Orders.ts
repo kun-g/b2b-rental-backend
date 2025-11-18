@@ -710,65 +710,62 @@ export const Orders: CollectionConfig = {
 
               // 解析和验证收货地址
               if (data.shipping_address) {
-                const { parseAddress } = await import('../utils/addressParser')
+                // 优先处理：如果已有标准的6位数字编码，根据编码反查省市区名称
+                if (data.shipping_address.region_code?.match(/^\d{6}$/)) {
+                  try {
+                    // 动态导入 china-division 库
+                    const chinaData = await import('china-division/dist/provinces.json')
+                    const citiesData = await import('china-division/dist/cities.json')
+                    const areasData = await import('china-division/dist/areas.json')
 
-                // 尝试从完整地址中解析省市区
-                const fullAddress = [
-                  data.shipping_address.province || '',
-                  data.shipping_address.city || '',
-                  data.shipping_address.district || '',
-                  data.shipping_address.address || '',
-                ].join('')
+                    const code = data.shipping_address.region_code
 
-                const parsed = parseAddress(fullAddress)
+                    // 查找区/县
+                    const areaItem = areasData.default.find((a: any) => a.code === code)
+                    if (areaItem) {
+                      // 找到区/县，反查市和省
+                      const cityItem = citiesData.default.find((c: any) => c.code === areaItem.cityCode)
+                      const provinceItem = chinaData.default.find((p: any) => p.code === areaItem.provinceCode)
+                      
+                      data.shipping_address.district = areaItem.name
+                      data.shipping_address.city = cityItem?.name || ''
+                      data.shipping_address.province = provinceItem?.name || ''
+                    } else {
+                      // 查找市
+                      const cityItem = citiesData.default.find((c: any) => c.code === code)
+                      if (cityItem) {
+                        const provinceItem = chinaData.default.find((p: any) => p.code === cityItem.provinceCode)
+                        data.shipping_address.city = cityItem.name
+                        data.shipping_address.province = provinceItem?.name || ''
+                        data.shipping_address.district = '' // 市级编码，没有区
+                      } else {
+                        // 查找省
+                        const provinceItem = chinaData.default.find((p: any) => p.code === code)
+                        if (provinceItem) {
+                          data.shipping_address.province = provinceItem.name
+                          data.shipping_address.city = ''
+                          data.shipping_address.district = ''
+                        } else {
+                          throw new APIError(`无法识别地区编码: ${code}`, 400)
+                        }
+                      }
+                    }
 
-                // 补全和验证地址字段
-                if (!data.shipping_address.province && parsed.province) {
-                  data.shipping_address.province = parsed.province
-                }
-
-                if (!data.shipping_address.city && parsed.city) {
-                  data.shipping_address.city = parsed.city
-                }
-
-                // 重点：如果 district 为空或者与 city 重复，尝试从解析结果补全
-                if (
-                  (!data.shipping_address.district ||
-                   data.shipping_address.district === data.shipping_address.city) &&
-                  parsed.district
-                ) {
-                  data.shipping_address.district = parsed.district
-                }
-
-                // 最终验证：必须有省市区
-                if (!data.shipping_address.province) {
-                  throw new APIError('收货地址缺少省份信息，请检查地址格式', 400)
-                }
-
-                if (!data.shipping_address.city) {
-                  throw new APIError('收货地址缺少城市信息，请检查地址格式', 400)
-                }
-
-                if (!data.shipping_address.district) {
-                  throw new APIError(
-                    `收货地址缺少区县信息。当前地址：${fullAddress}，请提供完整的省市区信息`,
-                    400,
-                  )
-                }
-
-                // 验证联系信息
-                if (!data.shipping_address.contact_name || !data.shipping_address.contact_phone) {
-                  throw new APIError('收货地址缺少联系人或联系电话', 400)
-                }
-
-                // 验证详细地址
-                if (!data.shipping_address.address || data.shipping_address.address.trim() === '') {
-                  throw new APIError('请提供详细的收货地址（街道、门牌号等）', 400)
-                }
-
-                // 自动填充地区编码（6位数字编码）
-                // 如果 region_code 不是标准的6位数字编码，则根据省市区名称查询编码
-                if (!data.shipping_address.region_code?.match(/^\d{6}$/)) {
+                    console.log(
+                      `[Orders] 地区编码反查成功: ${code} -> ${data.shipping_address.province} ${data.shipping_address.city} ${data.shipping_address.district}`
+                    )
+                  } catch (error) {
+                    if (error instanceof APIError) {
+                      throw error
+                    }
+                    const err = error as Error
+                    throw new APIError(
+                      `地区编码反查失败: ${err.message}`,
+                      400,
+                    )
+                  }
+                } else if (!data.shipping_address.region_code?.match(/^\d{6}$/)) {
+                  // 如果 region_code 不是标准的6位数字编码，则根据省市区名称查询编码
                   try {
                     // 动态导入 china-division 库
                     const chinaData = await import('china-division/dist/provinces.json')
@@ -829,11 +826,69 @@ export const Orders: CollectionConfig = {
                     if (error instanceof APIError) {
                       throw error
                     }
+                    const err = error as Error
                     throw new APIError(
-                      `地址编码转换失败: ${error.message}，请检查省市区是否完整和正确`,
+                      `地址编码转换失败: ${err.message}，请检查省市区是否完整和正确`,
                       400,
                     )
                   }
+                }
+
+                // 验证地址完整性（在编码转换/反查之后）
+                const { parseAddress } = await import('../utils/addressParser')
+
+                // 尝试从完整地址中解析省市区（作为补充）
+                const fullAddress = [
+                  data.shipping_address.province || '',
+                  data.shipping_address.city || '',
+                  data.shipping_address.district || '',
+                  data.shipping_address.address || '',
+                ].join('')
+
+                const parsed = parseAddress(fullAddress)
+
+                // 补全地址字段
+                if (!data.shipping_address.province && parsed.province) {
+                  data.shipping_address.province = parsed.province
+                }
+
+                if (!data.shipping_address.city && parsed.city) {
+                  data.shipping_address.city = parsed.city
+                }
+
+                // 重点：如果 district 为空或者与 city 重复，尝试从解析结果补全
+                if (
+                  (!data.shipping_address.district ||
+                   data.shipping_address.district === data.shipping_address.city) &&
+                  parsed.district
+                ) {
+                  data.shipping_address.district = parsed.district
+                }
+
+                // 最终验证：必须有省市区
+                if (!data.shipping_address.province) {
+                  throw new APIError('收货地址缺少省份信息，请检查地址格式', 400)
+                }
+
+                if (!data.shipping_address.city) {
+                  throw new APIError('收货地址缺少城市信息，请检查地址格式', 400)
+                }
+
+                if (!data.shipping_address.district) {
+                  throw new APIError(
+                    `收货地址缺少区县信息。当前地址：${fullAddress}，请提供完整的省市区信息`,
+                    400,
+                  )
+                }
+
+                // 验证联系信息
+                if (!data.shipping_address.contact_name || !data.shipping_address.contact_phone) {
+                  throw new APIError('收货地址缺少联系人或联系电话', 400)
+                }
+
+                // 验证详细地址
+                if (!data.shipping_address.address || data.shipping_address.address.trim() === '') {
+                  throw new APIError('请提供详细的收货地址（街道、门牌号等）', 400)
                 }
               }
 
@@ -1147,6 +1202,76 @@ export const Orders: CollectionConfig = {
             )
           }
         }
+      },
+    ],
+    afterRead: [
+      async ({ doc, req }) => {
+        // 填充 customer 的 username（从关联的 account 获取）
+        if (doc.customer) {
+          try {
+            // 如果 customer 是对象
+            if (typeof doc.customer === 'object') {
+              // 如果已经有 username，跳过
+              if (doc.customer.username) {
+                return doc
+              }
+
+              // 获取 account ID
+              const accountId = doc.customer.account
+                ? (typeof doc.customer.account === 'object' 
+                    ? doc.customer.account.id 
+                    : doc.customer.account)
+                : null
+
+              if (accountId) {
+                const account = await req.payload.findByID({
+                  collection: 'accounts',
+                  id: accountId,
+                })
+                
+                if (account && account.username) {
+                  doc.customer.username = account.username
+                }
+              }
+            } 
+            // 如果 customer 只是 ID，需要查询完整的 user 信息
+            else if (typeof doc.customer === 'number') {
+              const user = await req.payload.findByID({
+                collection: 'users',
+                id: doc.customer,
+                depth: 1,
+              })
+
+              if (user && user.account) {
+                const accountId = typeof user.account === 'object' 
+                  ? user.account.id 
+                  : user.account
+
+                const account = await req.payload.findByID({
+                  collection: 'accounts',
+                  id: accountId,
+                })
+
+                // 将 customer 替换为包含 username 的对象
+                doc.customer = {
+                  id: user.id,
+                  username: account.username || `user_${user.id}`,
+                  account: user.account,
+                  user_type: user.user_type,
+                  role: user.role,
+                  merchant: user.merchant,
+                  status: user.status,
+                }
+              }
+            }
+          } catch (error) {
+            // 忽略错误，不影响主流程
+            const err = error as Error
+            console.warn(`[Orders afterRead] 无法获取 customer username: ${err.message}`)
+          }
+        }
+
+        return doc
       },
     ],
   },

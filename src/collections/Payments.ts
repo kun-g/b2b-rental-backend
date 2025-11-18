@@ -19,20 +19,132 @@ export const Payments: CollectionConfig = {
     group: '订单管理',
   },
   access: {
-    create: async ({ req: { user, payload } }) => {
-      if (!user) return false
-      // 只有平台和商户可以创建支付记录
-      return await accountHasRole(payload, user.id, [
+    create: async ({ req: { user, payload }, data }) => {
+      if (!user) {
+        console.log('🔒 [Payments Access] 未登录用户')
+        return false
+      }
+      
+      console.log('🔒 [Payments Access] 检查权限', {
+        userId: user.id,
+        orderId: data?.order,
+      })
+      
+      // 平台和商户可以创建任何支付记录
+      const hasAdminRole = await accountHasRole(payload, user.id, [
         'platform_admin',
         'platform_operator',
         'merchant_admin',
         'merchant_member',
       ])
+      
+      console.log('🔒 [Payments Access] 管理员角色检查', { hasAdminRole })
+      if (hasAdminRole) return true
+      
+      // 客户可以为自己的订单创建支付记录
+      const hasCustomerRole = await accountHasRole(payload, user.id, ['customer'])
+      console.log('🔒 [Payments Access] 客户角色检查', { hasCustomerRole })
+      
+      if (hasCustomerRole && data?.order) {
+        try {
+          // 验证订单是否属于当前客户
+          const { getUserFromAccount } = await import('../utils/accountUtils')
+          const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+          
+          console.log('🔒 [Payments Access] 获取客户用户', { customerUser: customerUser?.id })
+          
+          if (customerUser) {
+            const orderId = typeof data.order === 'object' ? data.order.id : data.order
+            const order = await payload.findByID({
+              collection: 'orders',
+              id: orderId,
+            })
+            
+            console.log('🔒 [Payments Access] 订单信息', {
+              orderId,
+              orderCustomerId: typeof order.customer === 'object' ? order.customer.id : order.customer,
+              currentCustomerId: customerUser.id,
+            })
+            
+            const orderCustomerId = typeof order.customer === 'object' ? order.customer.id : order.customer
+            const isOwner = String(orderCustomerId) === String(customerUser.id)
+            
+            console.log('🔒 [Payments Access] 权限检查结果', { isOwner })
+            return isOwner
+          }
+        } catch (error) {
+          console.error('🔒 [Payments Access] 权限检查出错', error)
+          return false
+        }
+      }
+      
+      console.log('🔒 [Payments Access] 权限检查失败')
+      return false
     },
-    update: async ({ req: { user, payload } }) => {
-      if (!user) return false
-      // 只有平台可以修改支付记录
-      return await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+    update: async ({ req: { user, payload }, id }) => {
+      if (!user) {
+        console.log('🔒 [Payments Update] 未登录用户')
+        return false
+      }
+      
+      console.log('🔒 [Payments Update] 检查更新权限', {
+        userId: user.id,
+        paymentId: id,
+      })
+      
+      // 平台可以修改任何支付记录
+      const hasAdminRole = await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+      console.log('🔒 [Payments Update] 管理员角色检查', { hasAdminRole })
+      if (hasAdminRole) return true
+      
+      // 客户可以更新自己订单的支付记录（仅限状态更新）
+      const hasCustomerRole = await accountHasRole(payload, user.id, ['customer'])
+      console.log('🔒 [Payments Update] 客户角色检查', { hasCustomerRole })
+      
+      if (hasCustomerRole && id) {
+        try {
+          // 获取支付记录
+          const payment = await payload.findByID({
+            collection: 'payments',
+            id: id as string,
+          })
+          
+          console.log('🔒 [Payments Update] 支付记录信息', {
+            paymentId: payment.id,
+            orderId: typeof payment.order === 'object' ? payment.order.id : payment.order,
+          })
+          
+          // 获取订单信息
+          const orderId = typeof payment.order === 'object' ? payment.order.id : payment.order
+          const order = await payload.findByID({
+            collection: 'orders',
+            id: orderId,
+          })
+          
+          // 验证订单是否属于当前客户
+          const { getUserFromAccount } = await import('../utils/accountUtils')
+          const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+          
+          if (customerUser) {
+            const orderCustomerId = typeof order.customer === 'object' ? order.customer.id : order.customer
+            const isOwner = String(orderCustomerId) === String(customerUser.id)
+            
+            console.log('🔒 [Payments Update] 权限检查结果', {
+              orderCustomerId,
+              currentCustomerId: customerUser.id,
+              isOwner,
+            })
+            
+            return isOwner
+          }
+        } catch (error) {
+          console.error('🔒 [Payments Update] 权限检查出错', error)
+          return false
+        }
+      }
+      
+      console.log('🔒 [Payments Update] 权限检查失败')
+      return false
     },
     delete: async ({ req: { user, payload } }) => {
       if (!user) return false

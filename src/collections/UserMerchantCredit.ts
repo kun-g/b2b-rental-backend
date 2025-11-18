@@ -325,5 +325,75 @@ export const UserMerchantCredit: CollectionConfig = {
         return data
       },
     ],
+    afterRead: [
+      async ({ doc, req }) => {
+        // 填充 user 的 username（从关联的 account 获取）
+        if (doc.user) {
+          try {
+            // 如果 user 是对象
+            if (typeof doc.user === 'object') {
+              // 如果已经有 username，跳过
+              if (doc.user.username) {
+                return doc
+              }
+
+              // 获取 account ID
+              const accountId = doc.user.account
+                ? (typeof doc.user.account === 'object' 
+                    ? doc.user.account.id 
+                    : doc.user.account)
+                : null
+
+              if (accountId) {
+                const account = await req.payload.findByID({
+                  collection: 'accounts',
+                  id: accountId,
+                })
+                
+                if (account && account.username) {
+                  doc.user.username = account.username
+                }
+              }
+            } 
+            // 如果 user 只是 ID，需要查询完整的 user 信息
+            else if (typeof doc.user === 'number') {
+              const user = await req.payload.findByID({
+                collection: 'users',
+                id: doc.user,
+                depth: 1,
+              })
+
+              if (user && user.account) {
+                const accountId = typeof user.account === 'object' 
+                  ? user.account.id 
+                  : user.account
+
+                const account = await req.payload.findByID({
+                  collection: 'accounts',
+                  id: accountId,
+                })
+
+                // 将 user 替换为包含 username 的对象
+                doc.user = {
+                  id: user.id,
+                  username: account.username || `user_${user.id}`,
+                  account: user.account,
+                  user_type: user.user_type,
+                  role: user.role,
+                  merchant: user.merchant,
+                  status: user.status,
+                }
+              }
+            }
+          } catch (error) {
+            // 忽略错误，不影响主流程
+            const err = error as Error
+            console.warn(`[UserMerchantCredit afterRead] 无法获取 user username: ${err.message}`)
+          }
+        }
+
+        return doc
+      },
+    ],
   },
 }
