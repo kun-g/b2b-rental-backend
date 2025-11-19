@@ -15,6 +15,119 @@ export const Orders: CollectionConfig = {
     defaultColumns: ['order_no', 'customer', 'merchant', 'merchant_sku', 'status', 'createdAt'],
     group: '订单管理',
   },
+  endpoints: [
+    {
+      path: '/search',
+      method: 'get',
+      handler: async (req) => {
+        try {
+          const { user, payload, query } = req
+
+          if (!user) {
+            return Response.json({ error: '未授权' }, { status: 401 })
+          }
+
+          // 构建查询条件
+          const where: any = { and: [] }
+
+          // 权限过滤
+          const hasRole = await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+          if (!hasRole) {
+            const merchantId = await getAccountMerchantId(payload, user.id, [])
+            if (merchantId) {
+              where.and.push({ merchant: { equals: merchantId } })
+            } else {
+              const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+              if (customerUser) {
+                where.and.push({ customer: { equals: customerUser.id } })
+              } else {
+                return Response.json({ error: '无权限' }, { status: 403 })
+              }
+            }
+          }
+
+          // 订单号筛选
+          if (query.order_no) {
+            where.and.push({ order_no: { contains: query.order_no } })
+          }
+
+          // 状态筛选
+          if (query.status) {
+            where.and.push({ status: { equals: query.status } })
+          }
+
+          // 创建时间筛选
+          if (query.createdAt_gte) {
+            where.and.push({ createdAt: { greater_than_equal: query.createdAt_gte } })
+          }
+          if (query.createdAt_lte) {
+            where.and.push({ createdAt: { less_than_equal: query.createdAt_lte } })
+          }
+
+          // 商户筛选（平台后台使用）
+          if (query.merchantId) {
+            where.and.push({ merchant: { equals: query.merchantId } })
+          }
+
+          // 客户筛选（商户后台使用）
+          if (query.userId) {
+            where.and.push({ customer: { equals: query.userId } })
+          }
+
+          // 分页参数
+          const page = parseInt(query.page as string) || 1
+          const limit = parseInt(query.limit as string) || 20
+          const depth = parseInt(query.depth as string) || 3
+
+          // 查询订单
+          const result = await payload.find({
+            collection: 'orders',
+            where: where.and.length > 0 ? where : {},
+            page,
+            limit,
+            depth,
+            sort: '-createdAt',
+          })
+
+          // 用户名筛选（前端传递的参数）
+          let filteredDocs = result.docs
+          if (query.username) {
+            filteredDocs = filteredDocs.filter((order: any) => {
+              const username = order.customer?.username || ''
+              return username.toLowerCase().includes((query.username as string).toLowerCase())
+            })
+          }
+
+          // 商户名称筛选（前端传递的参数）
+          if (query.merchantName) {
+            filteredDocs = filteredDocs.filter((order: any) => {
+              const merchantName = typeof order.merchant === 'object' ? (order.merchant.name || '') : ''
+              return merchantName.toLowerCase().includes((query.merchantName as string).toLowerCase())
+            })
+          }
+
+          return Response.json({
+            docs: filteredDocs,
+            totalDocs: result.totalDocs,
+            limit: result.limit,
+            totalPages: result.totalPages,
+            page: result.page,
+            pagingCounter: result.pagingCounter,
+            hasPrevPage: result.hasPrevPage,
+            hasNextPage: result.hasNextPage,
+            prevPage: result.prevPage,
+            nextPage: result.nextPage,
+          })
+        } catch (error) {
+          console.error('[Orders search endpoint] 错误:', error)
+          return Response.json(
+            { error: error instanceof Error ? error.message : '查询失败' },
+            { status: 500 }
+          )
+        }
+      },
+    },
+  ],
   access: {
     read: async ({ req: { user, payload } }) => {
       if (!user) return false
@@ -1060,7 +1173,19 @@ export const Orders: CollectionConfig = {
             notes: data.notes,
           })
 
-          // PAID 状态不自动流转，需要商户手动点击"接受订单"
+          // PAID 状态自动流转到 TO_SHIP（待发货）
+          if (data.status === 'PAID' && originalDoc.status === 'NEW') {
+            console.log('💰 [订单支付成功] 自动流转到待发货状态')
+            data.status = 'TO_SHIP'
+            
+            // 记录自动流转
+            data.status_history.push({
+              status: 'TO_SHIP',
+              changed_at: new Date().toISOString(),
+              operator: req.user?.id,
+              notes: '支付成功，自动流转到待发货',
+            })
+          }
 
           // SHIPPED时设置计费起点和处理设备绑定
           if (data.status === 'SHIPPED') {
