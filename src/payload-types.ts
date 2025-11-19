@@ -591,6 +591,43 @@ export interface Order {
     region_code?: string | null;
   };
   /**
+   * 记录收货地址被修改的次数
+   */
+  address_change_count?: number | null;
+  /**
+   * 记录每次地址修改的详细信息
+   */
+  address_change_history?:
+    | {
+        changed_at: string;
+        operator?: (number | null) | User;
+        old_address?: {
+          contact_name?: string | null;
+          contact_phone?: string | null;
+          province?: string | null;
+          city?: string | null;
+          district?: string | null;
+          address?: string | null;
+          region_code?: string | null;
+        };
+        new_address?: {
+          contact_name?: string | null;
+          contact_phone?: string | null;
+          province?: string | null;
+          city?: string | null;
+          district?: string | null;
+          address?: string | null;
+          region_code?: string | null;
+        };
+        shipping_fee_change?: {
+          old_fee?: number | null;
+          new_fee?: number | null;
+          adjustment?: number | null;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * 商户可在"归还中"之前修改归还地址
    */
   return_address?: {
@@ -1333,6 +1370,43 @@ export interface OrdersSelect<T extends boolean = true> {
         district?: T;
         address?: T;
         region_code?: T;
+      };
+  address_change_count?: T;
+  address_change_history?:
+    | T
+    | {
+        changed_at?: T;
+        operator?: T;
+        old_address?:
+          | T
+          | {
+              contact_name?: T;
+              contact_phone?: T;
+              province?: T;
+              city?: T;
+              district?: T;
+              address?: T;
+              region_code?: T;
+            };
+        new_address?:
+          | T
+          | {
+              contact_name?: T;
+              contact_phone?: T;
+              province?: T;
+              city?: T;
+              district?: T;
+              address?: T;
+              region_code?: T;
+            };
+        shipping_fee_change?:
+          | T
+          | {
+              old_fee?: T;
+              new_fee?: T;
+              adjustment?: T;
+            };
+        id?: T;
       };
   return_address?:
     | T

@@ -17,6 +17,102 @@ export const Orders: CollectionConfig = {
   },
   endpoints: [
     {
+      path: '/stats',
+      method: 'get',
+      handler: async (req) => {
+        try {
+          const { user, payload, query } = req
+
+          if (!user) {
+            return Response.json({ error: '未授权' }, { status: 401 })
+          }
+
+          // 构建基础查询条件（权限过滤）
+          const baseWhere: any = { and: [] }
+
+          // 权限过滤
+          const hasRole = await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+          if (!hasRole) {
+            const merchantId = await getAccountMerchantId(payload, user.id, [])
+            if (merchantId) {
+              baseWhere.and.push({ merchant: { equals: merchantId } })
+            } else {
+              const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+              if (customerUser) {
+                baseWhere.and.push({ customer: { equals: customerUser.id } })
+              } else {
+                return Response.json({ error: '无权限' }, { status: 403 })
+              }
+            }
+          }
+
+          // 添加筛选条件（订单号、时间范围等）
+          if (query.order_no) {
+            baseWhere.and.push({ order_no: { contains: query.order_no } })
+          }
+          if (query.createdAt_gte) {
+            baseWhere.and.push({ createdAt: { greater_than_equal: query.createdAt_gte } })
+          }
+          if (query.createdAt_lte) {
+            baseWhere.and.push({ createdAt: { less_than_equal: query.createdAt_lte } })
+          }
+          if (query.merchantId) {
+            baseWhere.and.push({ merchant: { equals: query.merchantId } })
+          }
+          if (query.userId) {
+            baseWhere.and.push({ customer: { equals: query.userId } })
+          }
+
+          // 定义所有状态
+          const statuses = ['NEW', 'PAID', 'TO_SHIP', 'SHIPPED', 'IN_RENT', 'RETURNING', 'RETURNED', 'COMPLETED', 'CANCELED']
+
+          // 并行查询所有状态的数量
+          const statsPromises = statuses.map(async (status) => {
+            const where = {
+              and: [
+                ...baseWhere.and,
+                { status: { equals: status } }
+              ]
+            }
+            const result = await payload.find({
+              collection: 'orders',
+              where: baseWhere.and.length > 0 ? where : { status: { equals: status } },
+              limit: 0, // 只获取数量，不获取数据
+              depth: 0,
+            })
+            return { status, count: result.totalDocs }
+          })
+
+          // 查询总数（所有状态）
+          const totalResult = await payload.find({
+            collection: 'orders',
+            where: baseWhere.and.length > 0 ? baseWhere : {},
+            limit: 0,
+            depth: 0,
+          })
+
+          const stats = await Promise.all(statsPromises)
+
+          // 转换为对象格式
+          const statsMap: Record<string, number> = {}
+          stats.forEach(({ status, count }) => {
+            statsMap[status] = count
+          })
+
+          return Response.json({
+            total: totalResult.totalDocs,
+            byStatus: statsMap,
+          })
+        } catch (error) {
+          console.error('[Orders stats endpoint] 错误:', error)
+          return Response.json(
+            { error: error instanceof Error ? error.message : '统计失败' },
+            { status: 500 }
+          )
+        }
+      },
+    },
+    {
       path: '/search',
       method: 'get',
       handler: async (req) => {
@@ -472,6 +568,150 @@ export const Orders: CollectionConfig = {
           name: 'region_code',
           type: 'text',
           label: '地区编码',
+        },
+      ],
+    },
+    {
+      name: 'address_change_count',
+      type: 'number',
+      defaultValue: 0,
+      label: '地址修改次数',
+      admin: {
+        readOnly: true,
+        description: '记录收货地址被修改的次数',
+      },
+    },
+    {
+      name: 'address_change_history',
+      type: 'array',
+      label: '地址修改历史',
+      admin: {
+        readOnly: true,
+        description: '记录每次地址修改的详细信息',
+      },
+      fields: [
+        {
+          name: 'changed_at',
+          type: 'date',
+          required: true,
+          label: '修改时间',
+          admin: {
+            date: {
+              pickerAppearance: 'dayAndTime',
+            },
+          },
+        },
+        {
+          name: 'operator',
+          type: 'relationship',
+          relationTo: 'users',
+          label: '操作人',
+        },
+        {
+          name: 'old_address',
+          type: 'group',
+          label: '原地址',
+          fields: [
+            {
+              name: 'contact_name',
+              type: 'text',
+              label: '收货人',
+            },
+            {
+              name: 'contact_phone',
+              type: 'text',
+              label: '联系电话',
+            },
+            {
+              name: 'province',
+              type: 'text',
+              label: '省',
+            },
+            {
+              name: 'city',
+              type: 'text',
+              label: '市',
+            },
+            {
+              name: 'district',
+              type: 'text',
+              label: '区',
+            },
+            {
+              name: 'address',
+              type: 'text',
+              label: '详细地址',
+            },
+            {
+              name: 'region_code',
+              type: 'text',
+              label: '地区编码',
+            },
+          ],
+        },
+        {
+          name: 'new_address',
+          type: 'group',
+          label: '新地址',
+          fields: [
+            {
+              name: 'contact_name',
+              type: 'text',
+              label: '收货人',
+            },
+            {
+              name: 'contact_phone',
+              type: 'text',
+              label: '联系电话',
+            },
+            {
+              name: 'province',
+              type: 'text',
+              label: '省',
+            },
+            {
+              name: 'city',
+              type: 'text',
+              label: '市',
+            },
+            {
+              name: 'district',
+              type: 'text',
+              label: '区',
+            },
+            {
+              name: 'address',
+              type: 'text',
+              label: '详细地址',
+            },
+            {
+              name: 'region_code',
+              type: 'text',
+              label: '地区编码',
+            },
+          ],
+        },
+        {
+          name: 'shipping_fee_change',
+          type: 'group',
+          label: '运费变化',
+          fields: [
+            {
+              name: 'old_fee',
+              type: 'number',
+              label: '原运费（元）',
+            },
+            {
+              name: 'new_fee',
+              type: 'number',
+              label: '新运费（元）',
+            },
+            {
+              name: 'adjustment',
+              type: 'number',
+              label: '运费差额（元）',
+            },
+          ],
         },
       ],
     },
@@ -1105,9 +1345,16 @@ export const Orders: CollectionConfig = {
           if (addressChanged) {
             console.log('📍 [Orders] 检测到地址变化，重新计算运费')
 
-            // 检查订单状态，已发货后不允许修改地址
-            if (['SHIPPED', 'IN_RENT', 'RETURNING', 'RETURNED', 'COMPLETED'].includes(originalDoc.status)) {
-              throw new APIError('订单已发货，无法修改收货地址', 400)
+            // 检查订单状态，只有 NEW、PAID、TO_SHIP 状态可以修改地址
+            const canEditAddress = ['NEW', 'PAID', 'TO_SHIP'].includes(originalDoc.status)
+            if (!canEditAddress) {
+              throw new APIError('当前订单状态不允许修改收货地址', 400)
+            }
+
+            // 检查修改次数限制（最多2次）
+            const currentChangeCount = originalDoc.address_change_count || 0
+            if (currentChangeCount >= 2) {
+              throw new APIError('地址修改次数已达上限（最多2次）', 400)
             }
 
             // 获取运费模板
@@ -1132,6 +1379,7 @@ export const Orders: CollectionConfig = {
 
                 const newShippingFee = shippingResult.fee
                 const oldShippingFee = originalDoc.shipping_fee_snapshot
+                const adjustment = newShippingFee - oldShippingFee
 
                 // 根据订单状态决定如何处理运费变化
                 if (originalDoc.status === 'NEW') {
@@ -1147,8 +1395,6 @@ export const Orders: CollectionConfig = {
                   )
                 } else if (['PAID', 'TO_SHIP'].includes(originalDoc.status)) {
                   // 已支付订单：计算运费补差价
-                  const adjustment = newShippingFee - oldShippingFee
-
                   if (adjustment !== 0) {
                     data.shipping_fee_adjustment = adjustment
                     console.log(
@@ -1156,6 +1402,46 @@ export const Orders: CollectionConfig = {
                     )
                   }
                 }
+
+                // 记录地址修改历史
+                if (!data.address_change_history) {
+                  data.address_change_history = originalDoc.address_change_history || []
+                }
+
+                data.address_change_history.push({
+                  changed_at: new Date().toISOString(),
+                  operator: req.user?.id,
+                  old_address: {
+                    contact_name: originalDoc.shipping_address.contact_name,
+                    contact_phone: originalDoc.shipping_address.contact_phone,
+                    province: originalDoc.shipping_address.province,
+                    city: originalDoc.shipping_address.city,
+                    district: originalDoc.shipping_address.district,
+                    address: originalDoc.shipping_address.address,
+                    region_code: originalDoc.shipping_address.region_code,
+                  },
+                  new_address: {
+                    contact_name: data.shipping_address.contact_name,
+                    contact_phone: data.shipping_address.contact_phone,
+                    province: data.shipping_address.province,
+                    city: data.shipping_address.city,
+                    district: data.shipping_address.district,
+                    address: data.shipping_address.address,
+                    region_code: data.shipping_address.region_code,
+                  },
+                  shipping_fee_change: {
+                    old_fee: oldShippingFee,
+                    new_fee: newShippingFee,
+                    adjustment: adjustment,
+                  },
+                })
+
+                // 更新修改次数
+                data.address_change_count = (originalDoc.address_change_count || 0) + 1
+
+                console.log(
+                  `📝 [Orders] 记录地址修改历史，第 ${data.address_change_count} 次修改`,
+                )
               }
             }
           }

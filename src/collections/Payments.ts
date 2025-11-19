@@ -146,6 +146,73 @@ export const Payments: CollectionConfig = {
       console.log('🔒 [Payments Update] 权限检查失败')
       return false
     },
+    read: async ({ req: { user, payload } }) => {
+      if (!user) {
+        console.log('🔒 [Payments Read] 未登录用户')
+        return false
+      }
+      
+      console.log('🔒 [Payments Read] 检查读取权限', { userId: user.id })
+      
+      // 平台管理员可以查看所有支付记录
+      const hasAdminRole = await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+      console.log('🔒 [Payments Read] 管理员角色检查', { hasAdminRole })
+      if (hasAdminRole) return true
+      
+      // 商户可以查看自己商户的订单支付记录
+      const hasMerchantRole = await accountHasRole(payload, user.id, ['merchant_admin', 'merchant_member'])
+      console.log('🔒 [Payments Read] 商户角色检查', { hasMerchantRole })
+      
+      if (hasMerchantRole) {
+        try {
+          const { getUserFromAccount } = await import('../utils/accountUtils')
+          const merchantUser = await getUserFromAccount(payload, user.id, ['merchant_admin', 'merchant_member'])
+          
+          if (merchantUser?.merchant) {
+            const merchantId = typeof merchantUser.merchant === 'object' ? merchantUser.merchant.id : merchantUser.merchant
+            console.log('🔒 [Payments Read] 商户ID', { merchantId })
+            
+            // 返回查询条件：只能查看该商户的订单支付记录
+            return {
+              'order.merchant': {
+                equals: merchantId,
+              },
+            }
+          }
+        } catch (error) {
+          console.error('🔒 [Payments Read] 商户权限检查出错', error)
+          return false
+        }
+      }
+      
+      // 客户只能查看自己订单的支付记录
+      const hasCustomerRole = await accountHasRole(payload, user.id, ['customer'])
+      console.log('🔒 [Payments Read] 客户角色检查', { hasCustomerRole })
+      
+      if (hasCustomerRole) {
+        try {
+          const { getUserFromAccount } = await import('../utils/accountUtils')
+          const customerUser = await getUserFromAccount(payload, user.id, ['customer'])
+          
+          if (customerUser) {
+            console.log('🔒 [Payments Read] 客户ID', { customerId: customerUser.id })
+            
+            // 返回查询条件：只能查看自己的订单支付记录
+            return {
+              'order.customer': {
+                equals: customerUser.id,
+              },
+            }
+          }
+        } catch (error) {
+          console.error('🔒 [Payments Read] 客户权限检查出错', error)
+          return false
+        }
+      }
+      
+      console.log('🔒 [Payments Read] 权限检查失败')
+      return false
+    },
     delete: async ({ req: { user, payload } }) => {
       if (!user) return false
       // 只有平台管理员可以删除支付记录
