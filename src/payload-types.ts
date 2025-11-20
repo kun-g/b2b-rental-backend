@@ -578,6 +578,14 @@ export interface Order {
    */
   shipping_fee_adjustment?: number | null;
   /**
+   * 运费退款状态（当运费补差价为负数时使用）
+   */
+  refund_status?: ('none' | 'pending' | 'completed') | null;
+  /**
+   * 商户完成退款的时间
+   */
+  refund_paid_at?: string | null;
+  /**
    * 按设备价值冻结，完成时释放
    */
   credit_hold_amount?: number | null;
@@ -589,6 +597,15 @@ export interface Order {
     district: string;
     address: string;
     region_code?: string | null;
+    /**
+     * 省市区编码数组，如 ["440000", "440300", "440305"]，用于前端地区选择器
+     */
+    region_code_path?:
+      | {
+          code?: string | null;
+          id?: string | null;
+        }[]
+      | null;
   };
   /**
    * 记录收货地址被修改的次数
@@ -1359,6 +1376,8 @@ export interface OrdersSelect<T extends boolean = true> {
   shipping_fee_snapshot?: T;
   shipping_template_id?: T;
   shipping_fee_adjustment?: T;
+  refund_status?: T;
+  refund_paid_at?: T;
   credit_hold_amount?: T;
   shipping_address?:
     | T
@@ -1370,6 +1389,12 @@ export interface OrdersSelect<T extends boolean = true> {
         district?: T;
         address?: T;
         region_code?: T;
+        region_code_path?:
+          | T
+          | {
+              code?: T;
+              id?: T;
+            };
       };
   address_change_count?: T;
   address_change_history?:

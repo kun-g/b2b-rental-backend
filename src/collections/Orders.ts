@@ -515,6 +515,30 @@ export const Orders: CollectionConfig = {
       },
     },
     {
+      name: 'refund_status',
+      type: 'select',
+      label: '退款状态',
+      options: [
+        { label: '无需退款', value: 'none' },
+        { label: '待退款', value: 'pending' },
+        { label: '已退款', value: 'completed' },
+      ],
+      admin: {
+        description: '运费退款状态（当运费补差价为负数时使用）',
+      },
+    },
+    {
+      name: 'refund_paid_at',
+      type: 'date',
+      label: '退款时间',
+      admin: {
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        description: '商户完成退款的时间',
+      },
+    },
+    {
       name: 'credit_hold_amount',
       type: 'number',
       label: '授信冻结金额（元）',
@@ -568,6 +592,21 @@ export const Orders: CollectionConfig = {
           name: 'region_code',
           type: 'text',
           label: '地区编码',
+        },
+        {
+          name: 'region_code_path',
+          type: 'array',
+          label: '地区编码路径',
+          admin: {
+            description: '省市区编码数组，如 ["440000", "440300", "440305"]，用于前端地区选择器',
+          },
+          fields: [
+            {
+              name: 'code',
+              type: 'text',
+              label: '编码',
+            },
+          ],
         },
       ],
     },
@@ -1598,8 +1637,19 @@ export const Orders: CollectionConfig = {
 
           // COMPLETED时检查是否有未支付的补差价
           if (data.status === 'COMPLETED' && originalDoc.status === 'RETURNED') {
-            // 如果订单有超期费用，检查是否已支付
-            if (data.is_overdue && data.overdue_amount > 0) {
+            // 计算总补差价（逾期费用 + 运费差价）
+            const overdueAmount = data.overdue_amount || 0
+            const shippingFeeDiff = data.shipping_fee_adjustment || 0
+            const totalSurcharge = overdueAmount + shippingFeeDiff
+
+            console.log('💰 [完成订单检查] 计算总补差价', {
+              overdueAmount,
+              shippingFeeDiff,
+              totalSurcharge,
+            })
+
+            // 如果总补差价 > 0，需要客户支付
+            if (totalSurcharge > 0) {
               // 查询是否存在已支付的逾期补差价记录
               const overduePayments = await req.payload.find({
                 collection: 'payments',
@@ -1629,17 +1679,35 @@ export const Orders: CollectionConfig = {
               }, 0)
 
               console.log('💰 [补差价支付检查]', {
-                overdue_amount: data.overdue_amount,
+                totalSurcharge,
                 totalPaid,
-                hasUnpaid: totalPaid < data.overdue_amount,
+                hasUnpaid: totalPaid < totalSurcharge,
               })
 
-              if (totalPaid < data.overdue_amount) {
+              if (totalPaid < totalSurcharge) {
                 throw new APIError(
-                  `订单超期 ${data.overdue_days} 天，需要客户支付补差价 ${data.overdue_amount - totalPaid} 元后才能完成订单`,
+                  `订单需要客户支付补差价 ${totalSurcharge - totalSurcharge} 元后才能完成订单`,
                   400
                 )
               }
+            }
+            // 如果总补差价 < 0，需要商户退款
+            else if (totalSurcharge < 0) {
+              // 检查退款状态
+              if (data.refund_status !== 'completed') {
+                throw new APIError(
+                  `订单需要商户退款 ${Math.abs(totalSurcharge)} 元后才能完成订单`,
+                  400
+                )
+              }
+              console.log('✅ [退款检查] 商户已完成退款', {
+                refundAmount: Math.abs(totalSurcharge),
+                refund_status: data.refund_status,
+              })
+            }
+            // 如果总补差价 = 0，无需额外操作
+            else {
+              console.log('✅ [完成订单检查] 无需补差价或退款')
             }
           }
         }
