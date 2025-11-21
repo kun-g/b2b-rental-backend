@@ -24,14 +24,19 @@ export const Accounts: CollectionConfig = {
   },
   access: {
     // 任何登录用户都可以创建账号（注册功能）
-    // 实际权限由业务逻辑控制
     create: () => true,
     
-    // 用户可以读取自己的账号
-    // Payload Admin 需要读取当前登录用户的账号信息
-    read: ({ req: { user } }) => {
+    // 读取权限：平台管理员可以查看所有账号，其他用户只能查看自己
+    read: async ({ req: { user, payload } }) => {
       if (!user) return false
-      // 登录用户可以读取自己的账号
+      
+      // 检查是否是平台管理员
+      const isPlatformAdmin = await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
+      if (isPlatformAdmin) {
+        return true // 平台管理员可以查看所有账号
+      }
+      
+      // 其他用户只能查看自己的账号
       return {
         id: {
           equals: user.id,
@@ -39,9 +44,15 @@ export const Accounts: CollectionConfig = {
       }
     },
     
-    // 用户可以更新自己的账号
-    update: ({ req: { user } }) => {
+    // 更新权限：平台管理员可以更新所有账号，其他用户只能更新自己
+    update: async ({ req: { user, payload } }) => {
       if (!user) return false
+      
+      const isPlatformAdmin = await accountHasRole(payload, user.id, ['platform_admin'])
+      if (isPlatformAdmin) {
+        return true
+      }
+      
       return {
         id: {
           equals: user.id,
@@ -49,8 +60,11 @@ export const Accounts: CollectionConfig = {
       }
     },
     
-    // 禁止删除账号（通过 status 字段禁用）
-    delete: () => false,
+    // 删除权限：只有平台管理员可以删除
+    delete: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    },
   },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天
