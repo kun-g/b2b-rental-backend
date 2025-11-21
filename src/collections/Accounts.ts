@@ -23,40 +23,34 @@ export const Accounts: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // 只有平台管理员可以创建账号
-    create: async ({ req: { user, payload } }) => {
+    // 任何登录用户都可以创建账号（注册功能）
+    // 实际权限由业务逻辑控制
+    create: () => true,
+    
+    // 用户可以读取自己的账号
+    // Payload Admin 需要读取当前登录用户的账号信息
+    read: ({ req: { user } }) => {
       if (!user) return false
-      return await accountHasRole(payload, user.id, ['platform_admin'])
-    },
-    // 用户可以读取自己的账号，平台管理员可以读取所有账号
-    read: async ({ req: { user, payload } }) => {
-      if (!user) return false
-      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
-        return true
-      }
+      // 登录用户可以读取自己的账号
       return {
         id: {
           equals: user.id,
         },
       }
     },
-    // 用户可以更新自己的账号，平台管理员可以更新所有账号
-    update: async ({ req: { user, payload } }) => {
+    
+    // 用户可以更新自己的账号
+    update: ({ req: { user } }) => {
       if (!user) return false
-      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
-        return true
-      }
       return {
         id: {
           equals: user.id,
         },
       }
     },
-    // 只有平台管理员可以删除账号
-    delete: async ({ req: { user, payload } }) => {
-      if (!user) return false
-      return await accountHasRole(payload, user.id, ['platform_admin'])
-    },
+    
+    // 禁止删除账号（通过 status 字段禁用）
+    delete: () => false,
   },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天
