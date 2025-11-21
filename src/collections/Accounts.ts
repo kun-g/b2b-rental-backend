@@ -23,50 +23,12 @@ export const Accounts: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // 账号管理权限 - platform_admin 可以管理所有账号，其他人只能管理自己的账号
-    create: async ({ req: { user, payload } }) => {
-      // 允许注册（无需登录）
-      if (!user) return true
-
-      // platform_admin 可以创建账号
-      return await accountHasRole(payload, user.id, ['platform_admin'])
-    },
-    read: async ({ req: { user, payload } }) => {
-      if (!user) return false
-
-      // 检查是否是 platform_admin
-      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
-        return true // 可以查看所有账号
-      }
-
-      // 其他人只能读取自己的账号
-      return {
-        id: {
-          equals: user.id,
-        },
-      }
-    },
-    update: async ({ req: { user, payload } }) => {
-      if (!user) return false
-
-      // 检查是否是 platform_admin
-      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
-        return true // 可以更新所有账号
-      }
-
-      // 其他人只能更新自己的账号
-      return {
-        id: {
-          equals: user.id,
-        },
-      }
-    },
-    delete: async ({ req: { user, payload } }) => {
-      if (!user) return false
-
-      // 只有 platform_admin 可以删除账号（实际上应该用软删除）
-      return await accountHasRole(payload, user.id, ['platform_admin'])
-    },
+    // 临时开放所有权限用于初始化管理员账号
+    // TODO: 创建管理员后恢复正常的访问控制
+    create: () => true,
+    read: () => true,
+    update: () => true,
+    delete: () => true,
   },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天

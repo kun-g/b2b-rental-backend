@@ -31,12 +31,9 @@ export const Users: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // 创建业务身份权限
-    create: async ({ req: { user, payload } }) => {
-      if (!user) return false
-      // 检查是否有 platform_admin 角色
-      return await accountHasRole(payload, user.id, ['platform_admin'])
-    },
+    // 临时开放创建权限用于初始化
+    // TODO: 创建管理员后恢复正常的访问控制
+    create: () => true,
 
     // 读取业务身份权限
     read: async ({ req: { user, payload } }) => {
