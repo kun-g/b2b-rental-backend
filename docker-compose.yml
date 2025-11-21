@@ -7,9 +7,9 @@ services:
     container_name: cms-db-workstation
     working_dir: /app
     environment:
-      DATABASE_URI: ${DATABASE_URI:-postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms}
+      DATABASE_URI: postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms
       NODE_ENV: development
-      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      PAYLOAD_SECRET: 5a7ff1d3b3da0977ad05e12e9f40509095c9a1e99b1821bbd9ab4b519cc48c5b
     networks:
       - dokploy-network
     restart: unless-stopped  # 保持运行
@@ -20,15 +20,14 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URI: ${DATABASE_URI}
-      PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dev-payload-secret-change-in-production}
-      DATABASE_PUSH: ${DATABASE_PUSH:-false}
-      NODE_ENV: ${environment:-production}
+      DATABASE_URI: postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms
+      PAYLOAD_SECRET: 5a7ff1d3b3da0977ad05e12e9f40509095c9a1e99b1821bbd9ab4b519cc48c5b
+      DATABASE_PUSH: false
+      NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
-      PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL}
+      PAYLOAD_PUBLIC_SERVER_URL: https://cms.murderbot.io
     ports:
-      - '${CMS_PORT:-3000}'
+      - '3000'
     networks:
       - rent-backend-network
       - dokploy-network
