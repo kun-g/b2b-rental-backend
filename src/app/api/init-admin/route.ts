@@ -7,6 +7,10 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { NextResponse } from 'next/server'
 
+export async function GET() {
+  return NextResponse.json({ message: 'Use POST method to initialize admin' })
+}
+
 export async function POST() {
   try {
     const payload = await getPayload({ config })
