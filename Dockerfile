@@ -25,9 +25,9 @@ RUN pnpm run build
 RUN mkdir -p /app/public
 
 # Seeder image - for database initialization (with full source code)
-# 作为工作站长期运行，可以随时进入执行 seed/clean 等操作
 FROM base AS seeder
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
 COPY . .
 ENV NODE_ENV=development
 # 保持容器运行，使用 tail -f /dev/null 作为占位进程

@@ -1,28 +1,34 @@
 services:
-  db-workstation:
+  db-init:
     build:
       context: .
       dockerfile: Dockerfile
       target: seeder
-    container_name: cms-db-workstation
+    container_name: cms-db-init
     working_dir: /app
     environment:
       DATABASE_URI: postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms
       NODE_ENV: development
       PAYLOAD_SECRET: 5a7ff1d3b3da0977ad05e12e9f40509095c9a1e99b1821bbd9ab4b519cc48c5b
+      PAYLOAD_PUBLIC_SERVER_URL: https://rental-api.speedstarsunblocked.online
+      CORS_ALLOWED_ORIGINS: https://rental-app.speedstarsunblocked.online
     networks:
       - dokploy-network
-    restart: unless-stopped  # 保持运行
+    restart: "no"  # 只运行一次
+    command: sh -c "pnpm db:push && pnpm seed && echo 'Database initialization completed'"
 
   cms:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URI: postgresql://postgress:hHvjxC24@rent-database-gvfzwv:5432/cms
       PAYLOAD_SECRET: 5a7ff1d3b3da0977ad05e12e9f40509095c9a1e99b1821bbd9ab4b519cc48c5b
-      DATABASE_PUSH: false
+      DATABASE_PUSH: "false"
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
       PAYLOAD_PUBLIC_SERVER_URL: https://rental-api.speedstarsunblocked.online
