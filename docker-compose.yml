@@ -25,7 +25,8 @@ services:
       DATABASE_PUSH: false
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
-      PAYLOAD_PUBLIC_SERVER_URL: https://cms.murderbot.io
+      PAYLOAD_PUBLIC_SERVER_URL: https://rental-api.speedstarsunblocked.online
+      CORS_ALLOWED_ORIGINS: https://rental-app.speedstarsunblocked.online
     ports:
       - '3000'
     networks:
