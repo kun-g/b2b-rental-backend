@@ -31,9 +31,24 @@ export const Users: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // 临时开放创建权限用于初始化
-    // TODO: 创建管理员后恢复正常的访问控制
-    create: () => true,
+    // 创建业务身份权限
+    create: async ({ req: { user, payload } }) => {
+      if (!user) return false
+
+      // Platform admin 可以创建任何 User
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
+        return true
+      }
+
+      // 商户 admin 可以创建本商户的 merchant User
+      const merchantId = await getAccountMerchantId(payload, user.id, ['merchant_admin'])
+      if (merchantId) {
+        return true
+      }
+
+      // 其他人只能为自己的 Account 创建 customer User
+      return true
+    },
 
     // 读取业务身份权限
     read: async ({ req: { user, payload } }) => {

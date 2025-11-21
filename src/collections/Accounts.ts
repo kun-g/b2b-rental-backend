@@ -23,12 +23,40 @@ export const Accounts: CollectionConfig = {
     group: '账号管理',
   },
   access: {
-    // 临时开放所有权限用于初始化管理员账号
-    // TODO: 创建管理员后恢复正常的访问控制
-    create: () => true,
-    read: () => true,
-    update: () => true,
-    delete: () => true,
+    // 只有平台管理员可以创建账号
+    create: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    },
+    // 用户可以读取自己的账号，平台管理员可以读取所有账号
+    read: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
+        return true
+      }
+      return {
+        id: {
+          equals: user.id,
+        },
+      }
+    },
+    // 用户可以更新自己的账号，平台管理员可以更新所有账号
+    update: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      if (await accountHasRole(payload, user.id, ['platform_admin'])) {
+        return true
+      }
+      return {
+        id: {
+          equals: user.id,
+        },
+      }
+    },
+    // 只有平台管理员可以删除账号
+    delete: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      return await accountHasRole(payload, user.id, ['platform_admin'])
+    },
   },
   auth: {
     tokenExpiration: 7 * 24 * 60 * 60, // 7天
