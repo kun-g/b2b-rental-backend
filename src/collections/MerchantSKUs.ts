@@ -53,11 +53,6 @@ export const MerchantSKUs: CollectionConfig = {
                 equals: true,
               },
             },
-            {
-              listing_status: {
-                equals: 'approved',
-              },
-            },
           ],
         } as Where
       }
