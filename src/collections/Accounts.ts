@@ -30,7 +30,7 @@ export const Accounts: CollectionConfig = {
     read: async ({ req: { user, payload } }) => {
       if (!user) return false
       
-      // 检查是否是平台管理员
+      // 使用 accountHasRole（已添加 overrideAccess: true 避免循环依赖）
       const isPlatformAdmin = await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])
       if (isPlatformAdmin) {
         return true // 平台管理员可以查看所有账号
@@ -64,6 +64,8 @@ export const Accounts: CollectionConfig = {
     delete: async ({ req: { user, payload } }) => {
       if (!user) return false
       return await accountHasRole(payload, user.id, ['platform_admin'])
+      
+      return result.rows && result.rows[0]?.count > 0
     },
   },
   auth: {

@@ -61,6 +61,7 @@ export async function getUserFromAccount(
  * - 检查该 Account 关联的所有 Users 是否有任一角色匹配
  * - 如果 roles 为空数组，返回 false
  * - 如果查询失败，异常会传播到调用方
+ * - 使用 overrideAccess: true 避免在访问控制中造成循环依赖
  */
 export async function accountHasRole(
   payload: Payload,
@@ -74,6 +75,7 @@ export async function accountHasRole(
   }
 
   // 查询该 Account 关联的所有 Users
+  // 使用 overrideAccess: true 绕过访问控制，避免循环依赖
   const result = await payload.find({
     collection: 'users',
     where: {
@@ -86,6 +88,7 @@ export async function accountHasRole(
     },
     limit: 1,
     depth: 0,
+    overrideAccess: true, // 关键：绕过访问控制
   })
 
   return result.totalDocs > 0
