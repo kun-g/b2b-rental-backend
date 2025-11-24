@@ -45,12 +45,14 @@ export async function getUserFromAccount(
   }
 
   // 查询与该 Account 关联的 User（按创建时间排序）
+  // 使用 overrideAccess: true 避免在访问控制中造成循环依赖
   const result = await payload.find({
     collection: 'users',
     where,
     sort: 'createdAt', // 明确排序规则：返回最早创建的 User
     limit: 1,
     depth: 0,
+    overrideAccess: true, // 关键：绕过访问控制
   })
 
   return (result.docs[0] as User) || null
@@ -123,6 +125,7 @@ export async function getAccountMerchantId(
   const merchantRoles = ['merchant_admin', 'merchant_member']
   const rolesToCheck = roles.length === 0 ? merchantRoles : roles
 
+  // 使用 overrideAccess: true 避免在访问控制中造成循环依赖
   const result = await payload.find({
     collection: 'users',
     where: {
@@ -135,6 +138,7 @@ export async function getAccountMerchantId(
     },
     limit: 1,
     depth: 0,
+    overrideAccess: true, // 关键：绕过访问控制
   })
 
   if (result.totalDocs === 0) {
@@ -206,6 +210,7 @@ export async function getUserCreditedMerchantIds(
   }
 
   // 查询该用户的所有启用状态的授信记录
+  // 使用 overrideAccess: true 避免在访问控制中造成循环依赖
   const credits = await payload.find({
     collection: 'user-merchant-credit',
     where: {
@@ -218,6 +223,7 @@ export async function getUserCreditedMerchantIds(
     },
     limit: 1000, // 假设一个用户不会有超过1000个授信
     depth: 0, // 不需要关联查询，提高性能
+    overrideAccess: true, // 关键：绕过访问控制
   })
 
   // 提取所有有授信的商户 ID

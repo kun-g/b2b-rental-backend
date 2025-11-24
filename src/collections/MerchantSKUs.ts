@@ -20,16 +20,22 @@ export const MerchantSKUs: CollectionConfig = {
   },
   access: {
     read: async ({ req: { user, payload } }) => {
-      if (!user) return false
+      console.log('[MerchantSKUs.read] 开始访问控制检查, user.id:', user?.id)
+      if (!user) {
+        console.log('[MerchantSKUs.read] 无用户，拒绝访问')
+        return false
+      }
 
       // 平台角色可以查看所有 SKU
       if (await accountHasRole(payload, user.id, ['platform_admin', 'platform_operator'])) {
+        console.log('[MerchantSKUs.read] 平台角色，允许查看所有')
         return true
       }
 
       // 商户角色只能查看自己的 SKU
       const merchantId = await getAccountMerchantId(payload, user.id, [])
       if (merchantId) {
+        console.log('[MerchantSKUs.read] 商户角色，只能查看自己的 SKU, merchantId:', merchantId)
         return {
           merchant: {
             equals: merchantId,
@@ -38,10 +44,12 @@ export const MerchantSKUs: CollectionConfig = {
       }
 
       // 普通用户只能查看有授信的商户的已上架SKU
+      console.log('[MerchantSKUs.read] 普通用户，查询授信商户')
       const merchantIds = await getUserCreditedMerchantIds(payload, user.id)
+      console.log('[MerchantSKUs.read] 获取到授信商户ID列表:', merchantIds)
 
       if (merchantIds.length > 0) {
-        return {
+        const whereClause = {
           and: [
             {
               merchant: {
@@ -55,8 +63,11 @@ export const MerchantSKUs: CollectionConfig = {
             },
           ],
         } as Where
+        console.log('[MerchantSKUs.read] 返回 where 条件:', JSON.stringify(whereClause, null, 2))
+        return whereClause
       }
 
+      console.log('[MerchantSKUs.read] 无授信商户，拒绝访问')
       return false
     },
     create: async ({ req: { user, payload } }) => {
